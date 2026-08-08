@@ -1,0 +1,39 @@
+# Dependency directories
+node_modules/
+jspdf/
+
+# Next.js build output
+.next/
+out/
+
+# Environment files (contains credentials)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python caches and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Large Datasets and folders
+Datasets/
+Project_Documentation/
+*.docx
+*.pdf
+
+# VS Code settings
+.vscode/
+
+# OS metadata
+.DS_Store
+Thumbs.db
