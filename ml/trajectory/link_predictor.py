@@ -292,7 +292,7 @@ class CareerTrajectoryPredictor:
         # Save model
         torch.save({
             'model_state_dict': self.model.state_dict(),
-            'career_graph': self.career_graph,
+            'career_graph_data': nx.node_link_data(self.career_graph.graph),
             'model_config': {
                 'input_dim': data.x.size(1),
                 'hidden_dim': 64,
@@ -357,13 +357,14 @@ class CareerTrajectoryPredictor:
         # Negative edges (random non-existing edges)
         num_nodes = data.x.size(0)
         neg_edges = []
+        existing_edges = set(map(tuple, pos_edges.t().tolist()))
         
         for _ in range(pos_edges.size(1)):
             src = torch.randint(0, num_nodes, (1,)).item()
             dst = torch.randint(0, num_nodes, (1,)).item()
             
             # Ensure it's not an existing edge
-            if not self.career_graph.graph.has_edge(src, dst):
+            if src != dst and (src, dst) not in existing_edges and [src, dst] not in neg_edges:
                 neg_edges.append([src, dst])
         
         if neg_edges:
@@ -398,9 +399,12 @@ class CareerTrajectoryPredictor:
     
     def load_model(self, model_path: str):
         """Load trained model."""
-        checkpoint = torch.load(model_path, map_location='cpu')
+        checkpoint = torch.load(model_path, map_location='cpu', weights_only=True)
         
-        self.career_graph = checkpoint['career_graph']
+        self.career_graph = CareerTransitionGraph()
+        self.career_graph.graph = nx.node_link_graph(checkpoint['career_graph_data'])
+        self.career_graph.role_to_id = {attrs['role']: node for node, attrs in self.career_graph.graph.nodes(data=True)}
+        self.career_graph.id_to_role = {node: role for role, node in self.career_graph.role_to_id.items()}
         model_config = checkpoint['model_config']
         
         self.model = CareerGraphSAGE(**model_config)

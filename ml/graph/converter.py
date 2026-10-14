@@ -8,7 +8,6 @@ from torch_geometric.data import HeteroData, Data
 from typing import Dict, List, Tuple
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from transformers import AutoTokenizer, AutoModel
 
 class GraphConverter:
     """
@@ -18,9 +17,7 @@ class GraphConverter:
     
     def __init__(self, embedding_dim: int = 768):
         self.embedding_dim = embedding_dim
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-        self.bert_model = AutoModel.from_pretrained("bert-base-uncased")
-        self.bert_model.eval()
+        # Explicit lexical features; do not download BERT and never use it.
         
         # Node type mappings
         self.node_types = ["SKILL", "ROLE", "TOOL", "EDUCATION", "COMPANY"]
@@ -67,8 +64,11 @@ class GraphConverter:
         for node in node_list:
             features = self._create_single_node_features(G, node)
             node_features.append(features)
+
+        if not node_features:
+            raise ValueError("No recognized entities in graph; cannot encode an empty graph.")
         
-        x = torch.tensor(node_features, dtype=torch.float)
+        x = torch.from_numpy(np.asarray(node_features, dtype=np.float32))
         
         # Create edge index
         edge_index = []
@@ -167,7 +167,7 @@ class GraphConverter:
         ]
         
         # Binary features for keyword presence
-        keyword_features = [1.0 if keyword in words else 0.0 for keyword in career_keywords]
+        keyword_features = [1.0 if keyword in text.lower() else 0.0 for keyword in career_keywords]
         
         # Text length features
         length_features = [
@@ -201,6 +201,8 @@ class GraphConverter:
         for source, target, edge_data in G.edges(data=True):
             source_type = G.nodes[source]['type']
             target_type = G.nodes[target]['type']
+            if source_type not in node_mappings or target_type not in node_mappings:
+                continue
             edge_type = edge_data.get('type', 'RELATED_TO')
             
             edge_key = (source_type, edge_type, target_type)

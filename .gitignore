@@ -4,6 +4,8 @@ jspdf/
 
 # Next.js build output
 .next/
+tmp/
+*.tsbuildinfo
 out/
 
 # Environment files (contains credentials)
@@ -30,6 +32,10 @@ Datasets/
 Project_Documentation/
 *.docx
 *.pdf
+*.pt
+*.pth
+*.safetensors
+docker/wheels/*.whl
 
 # VS Code settings
 .vscode/

@@ -6,11 +6,12 @@ Fine-tuned SpaCy NER for extracting career entities from resumes and job descrip
 try:
     import spacy
     _SPACY_AVAILABLE = True
-except ImportError:
+except (ImportError, ValueError, TypeError):
     _SPACY_AVAILABLE = False
 
 from typing import List, Dict, Tuple
 import re
+from ml.skills import SKILL_ALIASES, _pattern
 
 class CareerNERExtractor:
     """
@@ -61,6 +62,10 @@ class CareerNERExtractor:
         # Post-process to extract additional patterns (always runs)
         entities.extend(self._extract_experience_years(text))
         entities.extend(self._extract_skills_patterns(text))
+        from ml.careerlens_engine import CareerLensEngine
+        for role in CareerLensEngine()._extract_roles(text):
+            for match in re.finditer(re.escape(role), text, re.I):
+                entities.append({"text": role, "label": "ROLE", "start": match.start(), "end": match.end(), "confidence": 1.0})
         
         return entities
     
@@ -89,44 +94,20 @@ class CareerNERExtractor:
     
     def _extract_skills_patterns(self, text: str) -> List[Dict]:
         """Extract common technical skills using patterns."""
-        # Common technical skills that might be missed by NER
-        skill_patterns = {
-            "PROGRAMMING": [
-                "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "Go", "Rust",
-                "PHP", "Ruby", "Swift", "Kotlin", "Scala", "R", "MATLAB"
-            ],
-            "FRAMEWORKS": [
-                "React", "Angular", "Vue", "Django", "Flask", "Spring", "Express",
-                "FastAPI", "Laravel", "Rails", "TensorFlow", "PyTorch", "Keras"
-            ],
-            "DATABASES": [
-                "MySQL", "PostgreSQL", "MongoDB", "Redis", "Elasticsearch",
-                "Cassandra", "DynamoDB", "SQLite", "Oracle", "SQL Server"
-            ],
-            "CLOUD": [
-                "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Jenkins",
-                "Terraform", "Ansible", "Git", "GitHub", "GitLab"
-            ]
-        }
-        
         entities = []
-        for category, skills in skill_patterns.items():
-            for skill in skills:
-                # Case-insensitive word boundary search
-                pattern = rf"\b{re.escape(skill)}\b"
-                matches = re.finditer(pattern, text, re.IGNORECASE)
-                for match in matches:
-                    entities.append({
-                        "text": match.group(0),
-                        "label": "SKILL",
-                        "start": match.start(),
-                        "end": match.end(),
-                        "confidence": 0.8,
-                        "category": category
-                    })
-        
+        for skill, aliases in SKILL_ALIASES.items():
+            spans = set()
+            for alias in [skill, *aliases]:
+                for match in _pattern(alias).finditer(text):
+                    if alias in ("Go", "R") and match.group() != alias:
+                        continue
+                    if (match.start(), match.end()) in spans:
+                        continue
+                    spans.add((match.start(), match.end()))
+                    entities.append({"text": skill, "label": "SKILL", "start": match.start(),
+                                     "end": match.end(), "confidence": 1.0, "category": "VOCABULARY"})
         return entities
-    
+
     def extract_structured_data(self, text: str) -> Dict:
         """
         Extract and structure all career-relevant information.
@@ -155,7 +136,7 @@ class CareerNERExtractor:
                     "category": entity.get("category", "GENERAL"),
                     "confidence": entity["confidence"]
                 })
-            elif label == "ROLE" or label == "PERSON":  # PERSON often captures job titles
+            elif label == "ROLE":
                 structured["roles"].append({
                     "title": entity["text"],
                     "confidence": entity["confidence"]
@@ -165,7 +146,7 @@ class CareerNERExtractor:
                     "name": entity["text"],
                     "confidence": entity["confidence"]
                 })
-            elif label == "EDUCATION" or label == "ORG":  # ORG often captures universities
+            elif label == "EDUCATION" or (label == "ORG" and re.search(r"university|college|institute|school", entity["text"], re.I)):
                 structured["education"].append({
                     "institution": entity["text"],
                     "confidence": entity["confidence"]

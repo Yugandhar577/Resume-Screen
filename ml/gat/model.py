@@ -106,7 +106,10 @@ class ResumeGAT(nn.Module):
         """
         # Apply GAT layers
         for i, gat_layer in enumerate(self.gat_layers):
-            x = gat_layer(x, edge_index)
+            if i == len(self.gat_layers) - 1:
+                x, self.last_attention_weights = gat_layer(x, edge_index, return_attention_weights=True)
+            else:
+                x = gat_layer(x, edge_index)
             
             if i < len(self.gat_layers) - 1:  # Not the last layer
                 x = F.elu(x)
@@ -215,7 +218,7 @@ class SiameseGAT(nn.Module):
 
 class ContrastiveLoss(nn.Module):
     """
-    InfoNCE contrastive loss for resume-JD matching.
+    Binary contrastive loss for labeled resume-JD pairs.
     Pulls together positive pairs, pushes apart hard negatives.
     """
     
@@ -226,7 +229,7 @@ class ContrastiveLoss(nn.Module):
     def forward(self, resume_emb: torch.Tensor, jd_emb: torch.Tensor, 
                 labels: torch.Tensor) -> torch.Tensor:
         """
-        Compute InfoNCE loss.
+        Compute binary cross-entropy on scaled cosine similarity.
         
         Args:
             resume_emb: Resume embeddings [batch_size, emb_dim]
@@ -236,24 +239,12 @@ class ContrastiveLoss(nn.Module):
         Returns:
             Contrastive loss
         """
-        batch_size = resume_emb.size(0)
-        
-        # Compute similarity matrix
-        similarity_matrix = torch.matmul(resume_emb, jd_emb.T) / self.temperature
-        
-        # Create positive pair mask
-        positive_mask = labels.unsqueeze(1) * labels.unsqueeze(0)
-        
-        # Create targets for positive pairs
-        targets = torch.arange(batch_size, device=resume_emb.device)
-        
-        # Mask out negative pairs in similarity matrix
-        masked_similarity = similarity_matrix * positive_mask + (1 - positive_mask) * (-1e9)
-        
-        # Cross-entropy loss
-        loss = F.cross_entropy(masked_similarity, targets)
-        
-        return loss
+        # Labeled negatives need an explicit loss; masking their whole row
+        # previously gave them no useful gradient.
+        resume_emb = F.normalize(resume_emb, dim=1)
+        jd_emb = F.normalize(jd_emb, dim=1)
+        logits = (resume_emb * jd_emb).sum(dim=1) / self.temperature
+        return F.binary_cross_entropy_with_logits(logits, labels.float())
 
 class GATExplainer:
     """
@@ -298,14 +289,14 @@ class GATExplainer:
     
     def _extract_attention_weights(self, resume_data: Data, jd_data: Data) -> dict:
         """Extract attention weights from GAT layers."""
-        # This is a simplified version - in practice, you'd need to modify
-        # the GAT forward pass to return attention weights
-        
-        # Placeholder implementation
-        return {
-            "resume": torch.rand(resume_data.x.size(0)),
-            "jd": torch.rand(jd_data.x.size(0))
-        }
+        result = {}
+        for name, data in (("resume", resume_data), ("jd", jd_data)):
+            self.model.get_embeddings(data)
+            edges, weights = self.model.encoder.last_attention_weights
+            scores = torch.zeros(data.x.size(0), device=data.x.device)
+            scores.scatter_add_(0, edges[0], weights.mean(dim=1))
+            result[name] = scores
+        return result
     
     def _get_important_nodes(self, data: Data, attention_weights: torch.Tensor) -> list:
         """Get top-k most important nodes based on attention."""

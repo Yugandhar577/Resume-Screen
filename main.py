@@ -1,345 +1,182 @@
-"""
-CareerLens FastAPI Backend - Integrated ML Pipeline
-Uses the complete ML pipeline: NER → Graph → GAT → Results
-"""
+"""CareerLens API: rule-based analysis with optional Groq reviewer feedback."""
 
-import os
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from dotenv import load_dotenv
-import logging
 import asyncio
-from typing import Optional
+import logging
+import os
 
-# Load environment variables
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, field_validator
+
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+from ml.careerlens_engine import CareerLensEngine
+from ml.hiring_simulator import HiringSimulator
+from ml.rewrite_workflow import apply_edits
+from ml.semantic_matching import SemanticMatcher
+from integrations.job_boards import Arbeitnow
+from ml.pdf_processing import extract_pdf, ocr_available
+from ml.model_registry import artifact_status
+from integrations.request_guard import RequestGuard
+
 logger = logging.getLogger(__name__)
-
-# Initialize CareerLens Engine
-try:
-    from ml.careerlens_engine import CareerLensEngine
-    careerlens_engine = CareerLensEngine()
-    ML_ENGINE_AVAILABLE = True
-    logger.info("CareerLens ML Engine initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize ML engine: {e}")
-    ML_ENGINE_AVAILABLE = False
-    careerlens_engine = None
-
-# Groq fallback
-try:
-    from groq import Groq
-    GROQ_AVAILABLE = True
-except ImportError:
-    GROQ_AVAILABLE = False
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="CareerLens API",
-    description="AI-Powered Resume Transformation & Hiring Simulation Platform",
-    version="1.0.0"
-)
-
-# Configure CORS
+careerlens_engine = CareerLensEngine()
+semantic_matcher = SemanticMatcher(os.getenv('GAT_MODEL_DIR', 'ml/models/gat_experimental'))
+job_board = Arbeitnow()
+MAX_TEXT_LENGTH = 50000
+MAX_PDF_BYTES = 5 * 1024 * 1024
+app = FastAPI(title="CareerLens API", version="1.1.0")
+if os.getenv('API_AUTH_TOKEN', '') and len(os.getenv('API_AUTH_TOKEN', '').strip()) < 32:
+    raise ValueError('API_AUTH_TOKEN must contain at least 32 characters, or be unset for local development.')
+app.add_middleware(RequestGuard)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if origin.strip()],
+    allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Content-Type", "Authorization"],
 )
 
-class AnalysisRequest(BaseModel):
-    resume: str
-    jobDescription: str
 
-class PDFAnalysisRequest(BaseModel):
-    jobDescription: str
+class AnalysisRequest(BaseModel):
+    resume: str = Field(min_length=1, max_length=MAX_TEXT_LENGTH)
+    jobDescription: str = Field(min_length=1, max_length=MAX_TEXT_LENGTH)
+    useAI: bool = False
+    useSemantic: bool = False
+
+    @field_validator("resume", "jobDescription")
+    @classmethod
+    def require_content(cls, value):
+        if not value.strip():
+            raise ValueError("Text cannot be blank.")
+        return value.strip()
+
+
+class RewriteRequest(AnalysisRequest):
+    acceptedEdits: list[str] = Field(default_factory=list, max_length=500)
+    template: str = Field(default='original', max_length=40)
+
 
 @app.get("/")
 async def root():
-    return {
-        "message": "CareerLens API is running",
-        "version": "1.0.0",
-        "status": "healthy"
-    }
+    return {"message": "CareerLens API is running", "version": "1.1.0", "status": "healthy"}
+
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "service": "CareerLens API",
-        "version": "1.0.0",
-        "ml_engine": ML_ENGINE_AVAILABLE,
-        "groq_available": GROQ_AVAILABLE and bool(os.getenv("GROQ_API_KEY"))
-    }
+    return {"status": "healthy", "service": "CareerLens API", "version": "1.1.0",
+            "analysis_mode": "Baseline_Rules_With_Optional_Semantic", "ml_engine": False,
+            "groq_available": HiringSimulator.is_configured(), "authentication_required": bool(os.getenv('API_AUTH_TOKEN', '').strip()),
+            "semantic_model": semantic_matcher.status(),
+            "research_models": {"rewriter": artifact_status('ml/models/t5_rewriter', 'resume_rewriting'),
+                                "bias": artifact_status('ml/models/jd_bias', 'job_bias'),
+                                "career": artifact_status('ml/models/career', 'career_trajectory')},
+            "capabilities": {"text_analysis": True, "pdf_text_extraction": True,
+                             "formatting_cleanup": True, "trained_matching": semantic_matcher.status()['available'],
+                             "career_prediction": False, "generative_rewriting": False, "reviewed_rewrites": True, "ocr": ocr_available()}}
+
+
+async def perform_analysis(resume, jd, use_ai=False, use_semantic=False):
+    try:
+        result = await asyncio.to_thread(careerlens_engine.analyze_resume_jd_pair, resume, jd)
+        if use_semantic:
+            try:
+                result['detailed_results']['semantic_matching'] = await asyncio.to_thread(semantic_matcher.analyze, resume, jd)
+            except Exception:
+                result['detailed_results']['semantic_matching'] = {'available': False, 'reason': 'Local semantic inference failed; skill coverage remains available.'}
+            result['warnings'].append('Semantic matching is experimental and has only been evaluated on synthetic relevance labels; it does not change the baseline score.')
+        if use_ai and HiringSimulator.is_configured():
+            try:
+                feedback = await asyncio.to_thread(HiringSimulator().review, resume, jd)
+                result["analysis"].update({key: feedback[key] for key in ('atsFeedback', 'techFeedback', 'hrFeedback')})
+                if feedback.get('reviewers'):
+                    result['detailed_results']['reviewers'] = feedback['reviewers']
+                result["review_method"] = "Groq"
+            except Exception:
+                logger.warning("Groq review unavailable; returning rule-based results.")
+                result["warnings"].append("AI reviewer feedback is unavailable; the results use rule-based checks.")
+        elif use_ai:
+            result["warnings"].append("Groq is not configured; the results use rule-based checks.")
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Resume analysis failed (%s)", type(exc).__name__)
+        raise HTTPException(status_code=500, detail="Analysis failed. Please try again.")
+
 
 @app.post("/api/analyze")
 async def analyze_resume(request: AnalysisRequest):
-    """
-    Core CareerLens endpoint - Uses integrated ML pipeline
-    Pipeline: Text → NER → Graph → GAT/ML → Results
-    """
+    return await perform_analysis(request.resume, request.jobDescription, request.useAI, request.useSemantic)
+
+
+@app.post('/api/optimize-preview')
+async def optimize_preview(request: RewriteRequest):
     try:
-        if ML_ENGINE_AVAILABLE and careerlens_engine:
-            # Use the complete ML pipeline (preferred)
-            logger.info("Using CareerLens ML pipeline")
-            result = await asyncio.to_thread(
-                careerlens_engine.analyze_resume_jd_pair,
-                request.resume,
-                request.jobDescription
-            )
-            return result
-            
-        elif GROQ_AVAILABLE and os.getenv("GROQ_API_KEY"):
-            # Fallback to Groq AI
-            logger.info("Using Groq AI fallback")
-            analysis = await analyze_with_groq(request.resume, request.jobDescription)
-            optimized_resume = await optimize_with_groq(request.resume, request.jobDescription)
-            
-            return {
-                "analysis": analysis,
-                "optimizedResume": optimized_resume,
-                "method": "Groq_Fallback"
-            }
-        else:
-            # Demo mode fallback
-            logger.info("Using demo mode")
-            return {
-                "analysis": get_demo_analysis(),
-                "optimizedResume": get_demo_optimization(request.resume),
-                "method": "Demo_Mode"
-            }
-        
-    except Exception as e:
-        logger.error(f"Analysis failed: {e}")
-        # Always fallback to demo mode if everything fails
-        return {
-            "analysis": get_demo_analysis(),
-            "optimizedResume": get_demo_optimization(request.resume),
-            "method": "Error_Fallback",
-            "error": str(e)
-        }
+        optimization = apply_edits(request.resume, request.acceptedEdits, request.template)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    before = await perform_analysis(request.resume, request.jobDescription)
+    after = await perform_analysis(optimization['resume'], request.jobDescription)
+    original_score, revised_score = before['analysis']['atsScore'], after['analysis']['atsScore']
+    after['optimization'] = {**optimization, 'sourceResume': request.resume,
+                             'proposals': before['optimization']['proposals'], 'templates': before['optimization']['templates']}
+    after['optimizedResume'] = optimization['resume']
+    after['comparison'] = {'before': original_score, 'after': revised_score,
+                           'delta': revised_score - original_score if original_score is not None and revised_score is not None else None,
+                           'metric': 'Recognized skill coverage',
+                           'note': 'Factual wording changes may improve clarity without changing skill coverage.'}
+    return after
+
 
 @app.post("/api/analyze-pdf")
-async def analyze_pdf_resume(file: UploadFile = File(...), jobDescription: str = ""):
-    """
-    PDF Resume Analysis - Extracts text from PDF then runs ML pipeline
-    """
+async def analyze_pdf_resume(file: UploadFile = File(...), jobDescription: str = Form(...), useAI: bool = Form(False), useSemantic: bool = Form(False), useOCR: bool = Form(False), pdfPassword: str = Form('')):
     try:
-        if not file.filename.endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="Only PDF files are supported")
-        
-        # Extract text from PDF
-        pdf_content = await file.read()
-        resume_text = extract_text_from_pdf(pdf_content)
-        
-        if not resume_text.strip():
-            raise HTTPException(status_code=400, detail="Could not extract text from PDF")
-        
-        # Run analysis using the same pipeline
-        if ML_ENGINE_AVAILABLE and careerlens_engine:
-            result = await asyncio.to_thread(
-                careerlens_engine.analyze_resume_jd_pair,
-                resume_text,
-                jobDescription
-            )
-            result["pdf_processed"] = True
-            return result
-        else:
-            # Fallback for PDF processing
-            return {
-                "analysis": get_demo_analysis(),
-                "optimizedResume": get_demo_optimization(resume_text),
-                "method": "PDF_Demo_Mode",
-                "pdf_processed": True
-            }
-            
-    except Exception as e:
-        logger.error(f"PDF analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=f"PDF analysis failed: {str(e)}")
+        if not jobDescription.strip() or len(jobDescription) > MAX_TEXT_LENGTH:
+            raise HTTPException(status_code=422, detail="Enter a job description of 1–50,000 characters.")
+        if not (file.filename or "").lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+        content = await file.read(MAX_PDF_BYTES + 1)
+        if len(content) > MAX_PDF_BYTES:
+            raise HTTPException(status_code=413, detail="PDF files must be 5 MB or smaller.")
+        if not content.lstrip().startswith(b"%PDF-"):
+            raise HTTPException(status_code=400, detail="The uploaded file is not a valid PDF.")
+        if len(pdfPassword) > 200:
+            raise HTTPException(status_code=422, detail='PDF password is too long.')
+        document = await asyncio.to_thread(extract_pdf, content, useOCR, pdfPassword)
+        text = document['text']
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="No readable text found. Scanned PDFs need OCR; paste the text instead.")
+        if len(text) > MAX_TEXT_LENGTH:
+            raise HTTPException(status_code=413, detail="Extracted resume text exceeds 50,000 characters.")
+        result = await perform_analysis(text.strip(), jobDescription.strip(), useAI, useSemantic)
+        result["pdf_processed"] = True
+        result['document'] = {key: value for key, value in document.items() if key != 'text'}
+        result['warnings'].extend(document['warnings'])
+        return result
+    finally:
+        await file.close()
+
 
 @app.get("/api/graph-data/{analysis_id}")
 async def get_graph_data(analysis_id: str):
-    """
-    Get knowledge graph data for visualization
-    """
-    # For now, return mock data that matches the expected format
-    # In a full implementation, this would retrieve stored analysis results
-    return {
-        "resume_graph": {
-            "nodes": [
-                {"id": "Python", "type": "skill", "weight": 0.9},
-                {"id": "Machine Learning", "type": "skill", "weight": 0.8},
-                {"id": "TensorFlow", "type": "skill", "weight": 0.7},
-                {"id": "Software Engineer", "type": "role", "weight": 1.0},
-                {"id": "REST APIs", "type": "skill", "weight": 0.6}
-            ],
-            "edges": [
-                {"source": "Python", "target": "Machine Learning", "weight": 0.8},
-                {"source": "Python", "target": "TensorFlow", "weight": 0.7},
-                {"source": "Python", "target": "Software Engineer", "weight": 0.9},
-                {"source": "Machine Learning", "target": "TensorFlow", "weight": 0.6}
-            ]
-        },
-        "jd_graph": {
-            "nodes": [
-                {"id": "Python", "type": "skill", "weight": 1.0},
-                {"id": "PyTorch", "type": "skill", "weight": 0.9},
-                {"id": "Deep Learning", "type": "skill", "weight": 0.9},
-                {"id": "Senior Developer", "type": "role", "weight": 1.0},
-                {"id": "FastAPI", "type": "skill", "weight": 0.7},
-                {"id": "Graph Neural Networks", "type": "skill", "weight": 0.8}
-            ],
-            "edges": [
-                {"source": "Python", "target": "PyTorch", "weight": 0.8},
-                {"source": "Python", "target": "Deep Learning", "weight": 0.7},
-                {"source": "PyTorch", "target": "Deep Learning", "weight": 0.9},
-                {"source": "Python", "target": "Senior Developer", "weight": 0.8},
-                {"source": "FastAPI", "target": "Senior Developer", "weight": 0.6}
-            ]
-        }
-    }
+    raise HTTPException(status_code=410, detail="Use detailed_results.graph_analysis from your analysis response.")
 
-async def analyze_with_groq(resume: str, job_description: str):
-    """Use FREE Groq AI for lightning-fast resume analysis"""
+
+@app.get('/api/jobs')
+async def search_jobs(query: str = '', limit: int = 10):
+    if len(query) > 100 or not 1 <= limit <= 20:
+        raise HTTPException(status_code=422, detail='Use a search query of at most 100 characters and a limit of 1–20.')
     try:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        
-        prompt = f"""
-You are a hiring expert. Analyze this resume against the job description and provide:
+        return await asyncio.to_thread(job_board.search, query, limit)
+    except Exception:
+        raise HTTPException(status_code=502, detail='Job listings are temporarily unavailable. Paste a job description instead.')
 
-JOB DESCRIPTION:
-{job_description}
 
-RESUME:
-{resume}
+def extract_text_from_pdf(content: bytes) -> str:
+    """Compatibility helper uses the maintained document workflow."""
+    return extract_pdf(content)['text']
 
-Respond in JSON format:
-{{
-    "atsScore": [number 0-100],
-    "atsFeedback": "[ATS system feedback]",
-    "techFeedback": "[Technical lead feedback]", 
-    "hrFeedback": "[HR recruiter feedback]",
-    "skillGaps": ["skill1", "skill2"],
-    "recommendations": ["rec1", "rec2"]
-}}
-"""
-        
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama3-8b-8192",  # Free Groq model
-            temperature=0.3,
-            max_tokens=1000
-        )
-        
-        # Parse JSON response
-        import json
-        result = json.loads(response.choices[0].message.content)
-        return result
-        
-    except Exception as e:
-        print(f"Groq analysis failed: {e}")
-        return get_demo_analysis()
-
-async def optimize_with_groq(resume: str, job_description: str):
-    """Use FREE Groq AI for resume optimization"""
-    try:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        
-        prompt = f"""
-Optimize this resume for the job description. Keep all original information but improve wording, structure, and ATS compatibility.
-
-JOB DESCRIPTION:
-{job_description}
-
-ORIGINAL RESUME:
-{resume}
-
-Return ONLY the optimized resume content, no explanations:
-"""
-        
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama3-8b-8192",
-            temperature=0.2,
-            max_tokens=2000
-        )
-        
-        return response.choices[0].message.content.strip()
-        
-    except Exception as e:
-        print(f"Groq optimization failed: {e}")
-        return get_demo_optimization(resume)
-
-def get_demo_analysis():
-    """Demo analysis when Groq is not available"""
-    return {
-        "atsScore": 78,
-        "atsFeedback": "Strong keyword match. Consider adding more industry-specific terms.",
-        "techFeedback": "Good technical depth shown. Highlight specific technologies used.",
-        "hrFeedback": "Clear career progression. Add more quantifiable achievements.",
-        "skillGaps": ["Cloud platforms", "Leadership experience"],
-        "recommendations": ["Add metrics to achievements", "Include soft skills", "Optimize for ATS"]
-    }
-
-def get_demo_optimization(resume: str):
-    """Demo optimization when ML engine is not available"""
-    return f"""OPTIMIZED RESUME (Demo Mode)
-
-{resume}
-
---- OPTIMIZATION APPLIED ---
-✅ Enhanced formatting for ATS compatibility
-✅ Improved action verbs and keywords
-✅ Better structure and readability
-✅ Matched to job requirements
-
-[Note: ML engine not available, using demo mode]
-"""
-
-def extract_text_from_pdf(pdf_content: bytes) -> str:
-    """Extract text from PDF bytes using PyPDF2 or pdfplumber."""
-    try:
-        import PyPDF2
-        import io
-        
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
-        text = ""
-        
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
-        
-        return text.strip()
-        
-    except ImportError:
-        # Fallback: try pdfplumber
-        try:
-            import pdfplumber
-            import io
-            
-            with pdfplumber.open(io.BytesIO(pdf_content)) as pdf:
-                text = ""
-                for page in pdf.pages:
-                    text += page.extract_text() + "\n"
-            
-            return text.strip()
-            
-        except ImportError:
-            # Final fallback: return placeholder
-            return "PDF text extraction not available. Please install PyPDF2 or pdfplumber."
-    
-    except Exception as e:
-        logger.error(f"PDF extraction failed: {e}")
-        return f"PDF extraction failed: {str(e)}"
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("BACKEND_PORT", 8001))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host=os.getenv('BACKEND_HOST', '127.0.0.1'), port=int(os.getenv("BACKEND_PORT", "8001")))

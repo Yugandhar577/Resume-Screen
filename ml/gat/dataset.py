@@ -12,6 +12,8 @@ from typing import List, Tuple, Dict
 import random
 from ml.graph.builder import KnowledgeGraphBuilder
 from ml.graph.converter import GraphConverter
+from data.synthetic_negatives import SyntheticNegativeGenerator
+from ml.skills import extract_skills
 
 class ContrastiveResumeDataset(Dataset):
     """
@@ -35,6 +37,9 @@ class ContrastiveResumeDataset(Dataset):
             hard_negative_ratio: Number of hard negatives per positive pair
             skill_removal_count: Number of skills to remove for hard negatives
         """
+        if not (len(resume_texts) == len(jd_texts) == len(labels)) or any(label not in (0, 1) for label in labels):
+            raise ValueError("Dataset lists must have equal lengths and binary labels.")
+        self.neg_generator = SyntheticNegativeGenerator()
         self.resume_texts = resume_texts
         self.jd_texts = jd_texts
         self.labels = labels
@@ -116,7 +121,8 @@ class ContrastiveResumeDataset(Dataset):
         for _ in range(count):
             # Create hard negative by removing skills
             modified_resume = self._remove_key_skills(resume_text, jd_skills)
-            hard_negatives.append((modified_resume, jd_text, 0))
+            if modified_resume != resume_text and extract_skills(modified_resume) and (modified_resume, jd_text, 0) not in hard_negatives:
+                hard_negatives.append((modified_resume, jd_text, 0))
         
         return hard_negatives
     
@@ -124,37 +130,8 @@ class ContrastiveResumeDataset(Dataset):
         """
         Remove key matching skills from resume to create hard negative.
         """
-        # Build resume graph to identify matching skills
-        resume_graph = self.graph_builder.build_graph(resume_text, "resume")
-        resume_skills = [
-            data['name'] for node, data in resume_graph.nodes(data=True)
-            if data['type'] == 'SKILL'
-        ]
-        
-        # Find skills that match between resume and JD
-        matching_skills = []
-        for resume_skill in resume_skills:
-            for jd_skill in jd_skills:
-                if (resume_skill.lower() in jd_skill.lower() or 
-                    jd_skill.lower() in resume_skill.lower()):
-                    matching_skills.append(resume_skill)
-                    break
-        
-        # Remove random subset of matching skills
-        if len(matching_skills) >= self.skill_removal_count:
-            skills_to_remove = random.sample(matching_skills, self.skill_removal_count)
-        else:
-            skills_to_remove = matching_skills
-        
-        # Remove skills from text (simple string replacement)
-        modified_text = resume_text
-        for skill in skills_to_remove:
-            # Replace skill mentions with generic placeholder
-            modified_text = modified_text.replace(skill, "[REMOVED_SKILL]")
-            # Also try lowercase version
-            modified_text = modified_text.replace(skill.lower(), "[removed_skill]")
-        
-        return modified_text
+        return self.neg_generator.generate_hard_negative(resume_text, jd_skills)
+
 
 def create_weak_supervision_pairs(
     resumes_df: pd.DataFrame,

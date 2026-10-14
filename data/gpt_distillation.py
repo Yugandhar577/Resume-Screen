@@ -1,4 +1,5 @@
-import openai
+from openai import OpenAI
+import os
 import pandas as pd
 from typing import List, Tuple
 import time
@@ -7,7 +8,8 @@ class GPTDistillationLabeller:
     """Use GPT-3.5 to generate improved resume bullets for T5 training data."""
     
     def __init__(self, api_key: str):
-        openai.api_key = api_key
+        self.client = OpenAI(api_key=api_key, timeout=30, max_retries=0)
+        self.model = os.getenv("DISTILLATION_MODEL", "gpt-4.1-mini")
     
     def improve_bullet(self, original_bullet: str) -> str:
         """Use GPT-3.5 to improve a single resume bullet point."""
@@ -18,17 +20,17 @@ Original: {original_bullet}
 
 Make it:
 - Start with strong action verb
-- Include quantifiable metrics where possible
+- Preserve all existing facts and metrics. Never invent numbers, skills, employers, or achievements.
 - Use industry keywords
 - Be concise but specific
 
 Improved:"""
 
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+            response = self.client.chat.completions.create(
+                model=self.model,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=100,
+                max_completion_tokens=300,
                 temperature=0.3
             )
             
@@ -43,7 +45,7 @@ Improved:"""
                               batch_size: int = 50) -> List[Tuple[str, str]]:
         """
         Generate improved versions of resume bullets for T5 training.
-        Cost: ~$3 for 1000 bullets with GPT-3.5-turbo
+        Generated pairs require human factual review before model training.
         """
         pairs = []
         

@@ -1,0 +1,113 @@
+{
+  "version": "graphsage-jobhop-research-v1",
+  "task": "career_trajectory",
+  "training_completed": true,
+  "deployment_ready": false,
+  "deployment_reason": "No fairness or cross-market validation; source warns against individual deployment without these checks. Public data does not contain candidate skills.",
+  "checkpoint": "model.pt",
+  "checkpoint_sha256": "a581b3002d113730b7f15e3cfb224d8f080e33e0b17920fe8735b18b6c0d3eb3",
+  "model_config": {
+    "input_dim": 64,
+    "hidden_dim": 32,
+    "output_dim": 16,
+    "num_layers": 2,
+    "dropout": 0.1
+  },
+  "seed": 42,
+  "epochs": 60,
+  "source": {
+    "source": "https://huggingface.co/datasets/aida-ugent/JobHop",
+    "revision": "766921f12b66eb886841393ab0400321e0373cb4",
+    "license": "CC BY 4.0",
+    "attribution": "JobHop v2: Iman Johary, Guillaume Bied, Alexandru C. Mara, Tijl De Bie; Ghent University; data provided by VDAB.",
+    "labels": "Pseudonymized observed careers, LLM-extracted ESCO assignments; not human-reviewed candidate recommendations.",
+    "restrictions": "Research only here: no re-identification, protected-attribute inference, or consequential decisions. Fairness evaluation is required before deployment.",
+    "files": [
+      {
+        "file": "JobHop_v2_train.parquet",
+        "url": "https://huggingface.co/datasets/aida-ugent/JobHop/resolve/766921f12b66eb886841393ab0400321e0373cb4/JobHop_v2_train.parquet",
+        "bytes": 9213302,
+        "sha256": "b2c0073161f4ac237d3b6b522a338f0d44a6860d2e7f4bdc613a71b8a1663a90"
+      },
+      {
+        "file": "JobHop_v2_val.parquet",
+        "url": "https://huggingface.co/datasets/aida-ugent/JobHop/resolve/766921f12b66eb886841393ab0400321e0373cb4/JobHop_v2_val.parquet",
+        "bytes": 1182855,
+        "sha256": "8794f96ea7ff5525de02bc0c010f9c56b1db7ec85c0718128f8ec26c70372be0"
+      },
+      {
+        "file": "JobHop_v2_test.parquet",
+        "url": "https://huggingface.co/datasets/aida-ugent/JobHop/resolve/766921f12b66eb886841393ab0400321e0373cb4/JobHop_v2_test.parquet",
+        "bytes": 1176715,
+        "sha256": "5d07a51386ec2df136ba7ceb280602bad702de6160e6b50550a280462f3e01ac"
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/datasets/aida-ugent/JobHop/resolve/766921f12b66eb886841393ab0400321e0373cb4/README.md",
+        "bytes": 10397,
+        "sha256": "d982cc084d45aa70c4436c257080c2299fb00408d97833595f4ec73eca197a1f"
+      }
+    ]
+  },
+  "split": "Provided person-disjoint train/validation/test; deterministic person subsampling, training-only graph and role vocabulary.",
+  "evaluation": {
+    "val": {
+      "pairs": 8306,
+      "positive_transitions": 4153,
+      "threshold": 0.39,
+      "auc": 0.8517540518694722,
+      "average_precision": 0.8711942220148415,
+      "f1": 0.7726553672316384,
+      "brier": 0.15512961149215698,
+      "calibrated": false,
+      "recall_at_5": 0.12424753190464724,
+      "mrr": 0.08180685955890458,
+      "frequency_baseline": {
+        "auc": 0.7008186852877438,
+        "recall_at_5": 0.15410546592824464,
+        "mrr": 0.10514139437680946
+      },
+      "excluded_unknown_or_infrequent_role_transitions": 634,
+      "candidate_occupations": 1271
+    },
+    "test": {
+      "pairs": 8562,
+      "positive_transitions": 4281,
+      "threshold": 0.39,
+      "auc": 0.8409156870034263,
+      "average_precision": 0.8608732079731349,
+      "f1": 0.7602416254805052,
+      "brier": 0.16061453521251678,
+      "calibrated": false,
+      "recall_at_5": 0.1195982247138519,
+      "mrr": 0.07913858203576235,
+      "frequency_baseline": {
+        "auc": 0.6976173791170287,
+        "recall_at_5": 0.14435879467414156,
+        "mrr": 0.10125748406706919
+      },
+      "excluded_unknown_or_infrequent_role_transitions": 570,
+      "candidate_occupations": 1271
+    }
+  },
+  "limitations": [
+    "Flemish public-employment-service population, not representative of India or all workers.",
+    "LLM-extracted records and proprietary ESCO assignment are not error-free.",
+    "Known-role transition links can recur across people; not an unseen-edge benchmark.",
+    "Uniform sampled negatives are not known impossible career moves.",
+    "No skills, calibrated timelines, protected attributes, or individual suitability conclusions."
+  ],
+  "environment": {
+    "python": "3.14.5",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "CPU",
+    "torch": "2.12.0",
+    "torch-geometric": "2.8.1",
+    "transformers": "5.9.0",
+    "sentence-transformers": "5.5.1",
+    "numpy": "2.4.6",
+    "pandas": "2.3.3",
+    "pyarrow": "24.0.0",
+    "scikit-learn": "1.9.0"
+  }
+}

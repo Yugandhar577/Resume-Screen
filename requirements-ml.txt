@@ -1,0 +1,20 @@
+# Optional research environment; Python 3.11 or 3.12 is recommended.
+# Install the appropriate CPU/CUDA torch wheel first, then this file.
+torch>=2.2,<3
+torch-geometric>=2.5,<3
+networkx>=3,<4
+numpy>=1.26,<3
+pandas>=2.2,<3
+scikit-learn>=1.4,<2
+spacy>=3.8,<4
+transformers>=4.46,<6
+sentence-transformers>=3.3,<6
+pyarrow>=18,<25
+snorkel>=0.10,<0.11
+sentencepiece>=0.2
+accelerate>=1
+tqdm>=4.66
+# Optional data-source scripts:
+openai>=1.50,<3
+praw>=7.7,<8
+selenium>=4.20,<5

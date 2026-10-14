@@ -11,7 +11,7 @@ python-multipart>=0.0.6
 python-dotenv>=1.0.0
 aiofiles>=23.0.0
 
-# Groq AI (FREE & FAST - required for AI optimization)
+# Optional, explicitly opted-in Groq reviewer feedback
 groq>=0.4.0
 
 # PDF Processing
@@ -23,8 +23,8 @@ requests>=2.31.0
 
 # =============================================
 # OPTIONAL: ML Dependencies
-# Install these ONLY if you want the full ML pipeline.
-# They are NOT required - the app runs in demo/Groq mode without them.
+# Install requirements-ml.txt for explicit research training or optional semantic matching.
+# They are NOT required for deterministic baseline analysis. Installation is not training.
 # =============================================
 # pip install torch --index-url https://download.pytorch.org/whl/cpu
 # pip install networkx>=3.0.0

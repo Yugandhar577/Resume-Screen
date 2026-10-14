@@ -25,14 +25,14 @@ from ml.gat.dataset import ContrastiveResumeDataset, collate_graph_batch, create
 class GATTrainer:
     """
     Trainer for Graph Attention Network with contrastive learning.
-    Implements InfoNCE loss with synthetic hard negatives.
+    Uses labeled contrastive pairs with explicit binary loss.
     """
     
     def __init__(
         self,
         model_config: Dict,
         training_config: Dict,
-        use_wandb: bool = True
+        use_wandb: bool = False
     ):
         self.model_config = model_config
         self.training_config = training_config
@@ -77,6 +77,9 @@ class GATTrainer:
         """
         Train the GAT model with contrastive learning.
         """
+        os.makedirs(os.path.dirname(save_path) or '.', exist_ok=True)
+        if not len(train_dataset) or not len(val_dataset):
+            raise ValueError('Training and validation datasets cannot be empty.')
         # Create data loaders
         train_loader = DataLoader(
             train_dataset,
@@ -94,7 +97,7 @@ class GATTrainer:
             num_workers=0
         )
         
-        best_val_recall = 0.0
+        best_val_f1 = -1.0
         patience_counter = 0
         
         for epoch in range(self.training_config['num_epochs']):
@@ -105,12 +108,12 @@ class GATTrainer:
             val_loss, val_metrics = self._validate_epoch(val_loader)
             
             # Learning rate scheduling
-            self.scheduler.step(val_metrics['recall_at_5'])
+            self.scheduler.step(val_metrics['f1'])
             
             # Logging
             print(f"Epoch {epoch+1}/{self.training_config['num_epochs']}")
             print(f"Train Loss: {train_loss:.4f}, Train Acc: {train_metrics['accuracy']:.4f}")
-            print(f"Val Loss: {val_loss:.4f}, Val Recall@5: {val_metrics['recall_at_5']:.4f}")
+            print(f"Val Loss: {val_loss:.4f}, Val F1: {val_metrics['f1']:.4f}")
             
             if self.use_wandb and wandb is not None:
                 wandb.log({
@@ -118,14 +121,13 @@ class GATTrainer:
                     "train_loss": train_loss,
                     "val_loss": val_loss,
                     "train_accuracy": train_metrics['accuracy'],
-                    "val_recall_at_5": val_metrics['recall_at_5'],
-                    "val_mrr": val_metrics['mrr'],
+                    "val_f1": val_metrics['f1'],
                     "learning_rate": self.optimizer.param_groups[0]['lr']
                 })
             
             # Early stopping and model saving
-            if val_metrics['recall_at_5'] > best_val_recall:
-                best_val_recall = val_metrics['recall_at_5']
+            if val_metrics['f1'] > best_val_f1:
+                best_val_f1 = val_metrics['f1']
                 patience_counter = 0
                 
                 # Save best model
@@ -134,10 +136,10 @@ class GATTrainer:
                     'optimizer_state_dict': self.optimizer.state_dict(),
                     'model_config': self.model_config,
                     'epoch': epoch,
-                    'best_val_recall': best_val_recall
+                    'best_val_f1': best_val_f1
                 }, save_path)
                 
-                print(f"New best model saved with Recall@5: {best_val_recall:.4f}")
+                print(f"New best model saved with F1: {best_val_f1:.4f}")
             else:
                 patience_counter += 1
                 
@@ -146,7 +148,7 @@ class GATTrainer:
                 print(f"Early stopping after {patience_counter} epochs without improvement")
                 break
         
-        print(f"Training completed. Best Recall@5: {best_val_recall:.4f}")
+        print(f"Training completed. Best F1: {best_val_f1:.4f}")
     
     def _train_epoch(self, train_loader: DataLoader) -> Tuple[float, Dict]:
         """Train for one epoch."""
@@ -228,106 +230,57 @@ class GATTrainer:
         predictions = (similarities > 0.5).astype(int)
         accuracy = accuracy_score(labels, predictions)
         precision, recall, f1, _ = precision_recall_fscore_support(
-            labels, predictions, average='binary'
+            labels, predictions, average='binary', zero_division=0
         )
         
-        # Ranking metrics
-        recall_at_5 = self._calculate_recall_at_k(similarities, labels, k=5)
-        mrr = self._calculate_mrr(similarities, labels)
-        
+        # Pair classification, not a per-job ranking benchmark.
         return {
             'accuracy': accuracy,
             'precision': precision,
             'recall': recall,
             'f1': f1,
-            'recall_at_5': recall_at_5,
-            'mrr': mrr
         }
     
-    def _calculate_recall_at_k(self, similarities: np.ndarray, labels: np.ndarray, k: int = 5) -> float:
-        """Calculate Recall@K metric."""
-        # Sort by similarity scores (descending)
-        sorted_indices = np.argsort(similarities)[::-1]
-        
-        # Get top-k predictions
-        top_k_labels = labels[sorted_indices[:k]]
-        
-        # Calculate recall@k
-        if np.sum(labels) == 0:  # No positive examples
-            return 0.0
-        
-        recall_at_k = np.sum(top_k_labels) / min(k, np.sum(labels))
-        return recall_at_k
-    
-    def _calculate_mrr(self, similarities: np.ndarray, labels: np.ndarray) -> float:
-        """Calculate Mean Reciprocal Rank."""
-        # Sort by similarity scores (descending)
-        sorted_indices = np.argsort(similarities)[::-1]
-        sorted_labels = labels[sorted_indices]
-        
-        # Find first positive example
-        first_positive = np.where(sorted_labels == 1)[0]
-        
-        if len(first_positive) == 0:
-            return 0.0
-        
-        # MRR is 1 / (rank of first positive)
-        mrr = 1.0 / (first_positive[0] + 1)
-        return mrr
 
 def load_training_data() -> Tuple[ContrastiveResumeDataset, ContrastiveResumeDataset]:
     """
     Load and prepare training data from Kaggle datasets.
     """
-    # Load datasets (placeholder - replace with actual data loading)
-    print("Loading Kaggle datasets...")
-    
-    # In practice, load from:
-    # resumes_df = pd.read_csv('data/kaggle_resumes.csv')
-    # jds_df = pd.read_csv('data/linkedin_jobs.csv')
-    
-    # For demo, create sample data
-    sample_resumes = [
-        "Senior Python Developer with 5 years Django and React experience",
-        "Data Scientist with machine learning and TensorFlow expertise",
-        "DevOps Engineer with AWS, Docker, and Kubernetes experience",
-        "Full Stack Developer with JavaScript, Node.js, and MongoDB skills",
-        "Machine Learning Engineer with PyTorch and computer vision experience"
-    ] * 100  # Repeat for larger dataset
-    
-    sample_jds = [
-        "Python Developer position requiring Django and web development skills",
-        "Data Scientist role with ML and Python requirements",
-        "DevOps position with cloud and containerization experience",
-        "Full Stack role requiring JavaScript and database experience",
-        "ML Engineer position with deep learning and Python skills"
-    ] * 100
-    
-    # Create weak supervision labels
-    labels = [1, 1, 1, 1, 1] * 100  # All positive for demo
-    
-    # Split into train/val
-    split_idx = int(0.8 * len(sample_resumes))
-    
-    train_dataset = ContrastiveResumeDataset(
-        resume_texts=sample_resumes[:split_idx],
-        jd_texts=sample_jds[:split_idx],
-        labels=labels[:split_idx],
-        hard_negative_ratio=3.0,
-        skill_removal_count=3
-    )
-    
-    val_dataset = ContrastiveResumeDataset(
-        resume_texts=sample_resumes[split_idx:],
-        jd_texts=sample_jds[split_idx:],
-        labels=labels[split_idx:],
-        hard_negative_ratio=2.0,
-        skill_removal_count=2
-    )
-    
-    return train_dataset, val_dataset
+    from sklearn.model_selection import GroupShuffleSplit
+    from ml.skills import extract_skills
+    path = os.getenv("GAT_DATASET", "data/gat_training_data.csv")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Provide a labeled CSV at {path} with resume,jd,label columns. No toy data is used.")
+    frame = pd.read_csv(path)
+    if not {"resume", "jd", "label"}.issubset(frame.columns):
+        raise ValueError("Dataset needs resume, jd, label columns.")
+    if frame.groupby(["resume", "jd"])["label"].nunique().gt(1).any():
+        raise ValueError("The same pair has conflicting labels; review the source dataset.")
+    frame = frame.drop_duplicates(subset=["resume", "jd"]).reset_index(drop=True)
+    if frame[["resume", "jd", "label"]].isna().any().any() or not frame["label"].isin([0, 1]).all():
+        raise ValueError("Dataset must have nonempty text and binary labels.")
+    frame = frame[frame["resume"].map(lambda s: bool(extract_skills(str(s)))) &
+                  frame["jd"].map(lambda s: bool(extract_skills(str(s))))].reset_index(drop=True)
+    if frame["resume"].nunique() < 5:
+        raise ValueError("At least five distinct resumes with recognized skills are needed for a grouped split.")
+    # Hold out entire resumes; synthetic variants are produced only after splitting.
+    for train_index, val_index in GroupShuffleSplit(n_splits=30, test_size=0.2, random_state=42).split(frame, groups=frame["resume"]):
+        train, val = frame.iloc[train_index], frame.iloc[val_index]
+        if train["label"].nunique() == 2 and val["label"].nunique() == 2:
+            break
+    else:
+        raise ValueError("Both train and validation sets need positive and negative labels.")
+    def dataset(rows, ratio):
+        return ContrastiveResumeDataset(rows["resume"].tolist(), rows["jd"].tolist(), rows["label"].tolist(),
+                                        hard_negative_ratio=ratio)
+    return dataset(train, 1.0), dataset(val, 0.0)
+
 
 def main():
+    import random
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
     """Main training function."""
     # Model configuration
     model_config = {

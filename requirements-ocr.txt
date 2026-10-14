@@ -1,0 +1,4 @@
+-r requirements.txt
+rapidocr-onnxruntime==1.2.3
+pypdfium2>=4.30,<6
+# Bundled local PP-OCR models are distributed with rapidocr-onnxruntime.
