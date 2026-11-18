@@ -1,51 +1,102 @@
-# Product promises: verified stage status
+# Current scope status — 14 October 2026
 
-This is an incremental delivery, not completion of every original promise.
-The minimal black-and-white UI and repaired baseline remain intact.
+The local desktop web implementation and experimental model integration are delivered.
+The original research promises still require independent real-world data and evaluation;
+AI approval of fictional examples cannot complete those empirical requirements.
 
-| Original promise | Delivered in this stage | Still needed |
+| Original scope | Implemented and exercised | Evidence still required |
 | --- | --- | --- |
-| Semantic matching | Trained local MiniLM/text-graph/GAT experiment, opt-in API/UI, checksum/provenance, disjoint heldouts and baseline comparison; evidence rules for negation/required/preferred/proficiency uncertainty | Reviewed real relevance labels, calibrated estimates, complete learned NER/entity-relation mapping, multilingual/occupation generalization and robustness |
-| Hiring simulation | Three distinct quoted rubrics, qualifications checklist; optional provider quotations verified against input | Human evaluation of rubric accuracy; no employer ATS or hiring-stage outcome is claimed |
-| Ethical optimization | Constrained introductory bullet rewrites, side-by-side diff, accept/reject, intact-section templates, actual reanalysis including zero gain | Validated free-form rewriting and adversarial semantic factual evaluation beyond the supported transformations |
-| T5/distillation | Review/license/checksum gates, source-disjoint training/validation/test preparation, local artifact loading contract, no untrained inference or fabricated improvement scores | Accepted reviewed pairs, actual fine-tuning run, human factual/writing-quality benchmarks and safe web integration |
-| Learned JD analysis | Real fitted Snorkel aggregation, preserved abstentions; review-gated BERT training/evaluation path; removed legacy fake probabilities/quality score | Suitable reviewed licensed labels, actual BERT run, phrase attribution, regional compensation evidence for salary checks and deployment validation |
-| Career trajectory | Trained GraphSAGE research benchmark on pinned JobHop, person-disjoint evaluation and frequency baseline | Better ranking, candidate-role/skill mapping, fairness and cross-market validation. No personalized output/timeline/confidence is enabled |
-| Graph explanations | Input-specific observed entity co-occurrence graphs, separate actual GAT text-chunk attention with exact quotes | Validated causal/perturbation attribution and learned entity relationships; attention is not causal explanation |
-| Document handling | Local OCR, inferred two-column order, correct-password handling, bounded pages/size, clean paginated export and tested Latin/Greek/Cyrillic font coverage | Complex layout and OCR accuracy benchmark; Indic/other scripts and shaping coverage; hardened hostile-document worker sandbox |
-| Roadmap/templates/job boards | Engineering/data/general section templates and supported Arbeitnow import, pinned reproducible public acquisition utilities | Wider authorized sources and human-review pipeline. Mobile remains planned after dependable web UX validation |
+| Semantic matching | Cross-occupation local semantic requirement-to-resume passage retrieval with exact quotes/qualifier flags; local pretrained NER → exact entity/source graph → MiniLM → trained GAT; aliases, contextual baseline requirements, unsupported-title handling; source/job-disjoint evaluation against baseline; synthetic-label calibration | Reviewed real relevance labels, occupation/language robustness and real-market calibration |
+| Hiring simulation | Three distinct evidence-linked rubrics and local E4B reviewers; parsing, qualifications, quoted strengths/concerns/recommendations | Independent factual/rubric usefulness assessment; no private ATS or employer outcomes predicted |
+| Ethical optimization | Gemma proposals, strict protected facts, exact approved-transformation certificates or semantic comparison, signed acceptance, source diff, section templates, actual reanalysis and clean export | Broader adversarial/human equivalence and writing-quality benchmarks |
+| T5/distillation | Licensed fictional examples, recorded AI approvals, explicit synthetic training gate, source-disjoint T5 fine-tuning/evaluation, local trained inference through shared validation/signature path; local teacher utility | Independently human-reviewed realistic examples and writing-quality evaluation; research remains deployment_ready=false |
+| Learned JD wording | Trained BERT, category holdout metrics, actual sentence-removal evidence, fitted Snorkel numeric aggregation, explicit abstentions and opt-in UI | Real contextual wording labels and deployment-context robustness/calibration |
+| India salary comparison | 8 sourced role CTC references, 20 industry/experience references, explicit base/CTC/units/experience checks, source dates/uncertainty, local custom-benchmark import | Broader current occupation/city coverage needs appropriate sources; no personal salary prediction |
+| Career exploration | Sourced skill-based career matching over 3,007 ESCO occupations with optional current/target role confirmation and exact resume evidence; evidence-linked local E4B ideas; trained/evaluated GraphSAGE; explicit local ESCO role search and historical research ranking; cold-start decline | GraphSAGE has no candidate skill input, trails frequency ranking, and lacks fairness/cross-market validation. No suitability/timeline/confidence claims |
+| Graph explanations | Request-specific observed graphs, named entity spans, actual learned attention, actual entity-node removal reruns; separate actual coverage-score perturbation | No causal claim or validated learned relation semantics; pretrained English NER is not career-fine-tuned |
+| Documents | Text/PDF/password/OCR/column workflows, editable extraction, bounded disposable parser; Windows memory/CPU/process and Linux address-space/CPU limits; shaped embedded-font Unicode PDF export | Broader OCR/layout/script benchmarks and a hostile-document security sandbox |
+| Roadmap | Six role templates, Arbeitnow/Remote OK import with attribution, responsive 320 px/desktop UI and web manifest; mobile scope in MOBILE_SCOPE.md | Native phone app and phone/laptop pairing are a future release; public deployment is not authorized |
 
-Cross-cutting: pre-parser body/upload bounds, per-worker concurrency limits, optional
-bearer access, loopback defaults, provider timeouts, no-store results, no intentional
-candidate persistence/logging, truthful capability reporting, automated regression
-checks. Production still needs TLS, distributed rate limits, identity management,
-worker sandbox/resource limits and operational policy review.
+## Default local AI
 
-## Verification performed
+Gemma 4 E4B is configured in `.env`, `.env.example`, the local transport and Docker
+configuration. Live fictional smoke: three reviewers returned in 34.89 seconds;
+rewrite generation/validation/application completed in 7.42 seconds. Actual laptop:
+RTX 4050 6 GB VRAM, about 24 GB RAM; working inference may include CPU/RAM offload.
+The per-generation timeout is 300 seconds. No API key or cloud fallback is used.
 
-- 42 passing API/engine/research/OCR/proposal and Snorkel regression checks; see tests/.
-- Local trained GAT API inference with actual source-text attention; no live provider calls.
-- ESLint, TypeScript and Next.js production build.
-- PDF export text extraction: all 150 numbered entries, final line, Latin accents,
-  Greek and Cyrillic preserved; all four rendered pages visually inspected.
-- npm audit reported zero vulnerabilities. Docker frontend/backend images were built
-  and started locally, with both health checks passing. Proxy checks passed for text
-  analysis, accepted edits, PDF text upload, font delivery and scanned-PDF OCR.
-  Containers include local OCR; experimental ML dependencies/weights remain optional.
-- Live public Arbeitnow API returned source-attributed listings; no candidate content was sent.
-- Interactive browser QA was unavailable because browser access was denied. No alternate
-  browser access was used; manual UI acceptance still remains.
+## Draft review and trained models
 
-Training results and source-selection constraints are in DATA_SOURCES.md. Checkpoints
-are local ignored artifacts; checked-in provenance does not substitute for the weights.
+All 24 rewrites and 60 JD drafts were read and AI-approved at the owner’s explicit
+request. The audit is `data/review_examples/AI_REVIEW.md`. Checksummed approved datasets
+are under `data/review_examples/ai-approved/`. Their provenance records `review_type=ai`,
+`ai_reviewed=true`, `reviewed=false`. Default human-review gates remain intact; synthetic
+AI training requires an explicit flag. No candidate upload entered training.
 
-## Next concrete gate
+T5, BERT, Snorkel, entity GAT and GraphSAGE artifacts are genuinely trained locally.
+Their final manifests record sources, hashes, holdout metrics and limitations; large
+weights/datasets are ignored by Git and must be reproduced in a fresh checkout.
+T5’s final four-example reused holdout preserved measured numbers, recognized skills and
+negation in 4/4, which does not establish semantic equivalence. BERT held-out F1 is
+1.0000 / 0.7692 / 0.9231 for the supported categories. GraphSAGE ranking still trails
+its frequency baseline. None is advertised as validated for consequential hiring.
 
-Obtain licensed/consented source documents and have qualified reviewers create or
-verify rewriting targets and JD labels. Public synthetic inputs can seed a review
-queue, but machine-generated targets must not be relabeled as human-reviewed. Train
-only after the checksum-bound review manifest is complete; publish neither candidate
-data nor consequential recommendations automatically.
+## Verification
 
-Separate optional extensions (DOCX, history, bulk screening, collaboration, learning
-resources) were not added. The original implementation brief remains unchanged.
+76 automated tests passed, including AI-vs-human provenance gates, T5 protected-fact
+rejection, opt-in research separation, exact entity spans/relations, weak-label
+abstention and actual Windows memory-limit enforcement. Production build, lint,
+local checkpoint inference and local E4B smoke are exercised. Browser checks exercised E4B + BERT/Snorkel + entity GAT together, explicit ESCO
+role selection and historical inference, T5 generation with conservative rejection,
+signed acceptance, actual before/after reanalysis, and PDF/text downloads preserving
+accepted and unaccepted facts. No overflow was observed at 320 px or 1280 px; no browser
+console errors were recorded. Isolated OCR passed under Windows resource limits.
+Reloaded BERT weights reproduced the recorded held-out metrics.
+The native local setup is the tested path; revised Docker research images are not
+claimed as tested or supplied with optional research weights/dependencies.
+
+## Local privacy and deployment
+
+Native servers bind to loopback. Bounded requests, optional private bearer access,
+per-worker concurrency, no-store API responses and no intentional candidate history
+are implemented. Public hosting still requires actual hosting configuration, HTTPS,
+identity management, distributed limits, stronger document isolation and operations.
+No app store release or public deployment has been performed.
+
+The preserved original brief is FUTURE_IMPLEMENTATION_PROMPT.md. Optional DOCX,
+history, bulk screening and collaboration extensions were not added to this scope.
+
+
+## India-first completion pass
+
+Operational workflows now include cross-occupation semantic evidence retrieval, exact
+transformation certificates for approved rewrites, a 3,007-profile skills-based career
+index, current/target occupation selection, and India salary extraction/comparison.
+These workflows do not depend on the historical GraphSAGE ranking being valid.
+
+Salary references retain 2025 source dates. Role references describe recruiter-reported
+CTC offers; industry references do not specify compensation basis and are displayed
+as references without a mismatch conclusion. Monthly/annual, lakh/crore, currency,
+base/CTC, experience brackets, conflicting units and multiple components are checked.
+No city premium, inflation update, sample size, percentile or confidence is invented.
+A permitted local benchmark JSON can extend coverage without a provider API key.
+
+Fresh authored stress evaluation: 96 exact rewrite cases passed; 480 altered fact
+cases were rejected; 18 qualification/negation cases passed. These test selected
+invariants and evidence rules, not real hiring validity or human writing quality.
+Results are in evaluation/operational_stress.json. See SALARY_REFERENCES.md for data
+coverage and import format. Candidate data is not used in the downloaded career index.
+
+Independent human/real-world validation of learned research models remains empirical
+work. This pass does not relabel AI approvals, synthetic test cases or public taxonomy
+relations as human-reviewed candidate outcomes.
+
+
+Final India-first browser checks exercised source-preserving semantic evidence,
+automatic skill-based role retrieval, explicit Data Scientist target selection, and
+an INR CTC comparison against a sourced role reference. No horizontal overflow was
+observed at 320 px or 1280 px and no browser console errors were recorded. A missing
+terminal full stop from an otherwise exact approved generated transformation is
+restored from the source; other missing/changed facts are never repaired automatically.
+
+Local benchmark import/restore was also exercised in the browser using an explicitly labeled test fixture; the published reference was restored afterward. Live trained T5 generation passed exact-transform certification and signed acceptance after source punctuation restoration.

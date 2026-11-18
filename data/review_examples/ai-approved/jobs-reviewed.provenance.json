@@ -1,0 +1,30 @@
+{
+  "source_url": "urn:careerlens:project-authored-fictional-review-examples:v1",
+  "license": "Project-authored synthetic examples, provided for use and modification in this project.",
+  "synthetic": true,
+  "reviewed": false,
+  "limitations": [
+    "AI-authored fictional practice data; no real candidates, jobs, or hiring outcomes.",
+    "Human approval of these examples does not establish real-world model quality.",
+    "Similar templates may leak phrasing across source splits; these are pipeline exercises only."
+  ],
+  "review_type": "ai",
+  "ai_reviewed": true,
+  "review_limitations": "AI approvals authorized by project owner; no human-reviewed attestation. Small templated fictional data supports pipeline testing only.",
+  "task": "job_bias",
+  "labels": [
+    "Vague",
+    "Biased",
+    "Experience_Inflated"
+  ],
+  "label_definitions": {
+    "Vague": "Contains unclear, non-measurable role expectations that need contextual clarification.",
+    "Biased": "Contains an explicit potentially exclusionary age, gender, or language restriction requiring contextual review.",
+    "Experience_Inflated": "Contains an experience expectation that conflicts with the stated entry level or stated technology timeline."
+  },
+  "reviewer": "Codex AI review",
+  "label_method": "Explicit AI review of fictional targets/labels",
+  "data_sha256": "7fae5b05d4dd8f512809fe6499308f83328a2bba27ed5c0196c9d10a6aeb93d5",
+  "review_queue_sha256": "8119e16489023a10fcd06d10b2ff8ba841ebe083f47071a818bfaf4733481871",
+  "review_attestation": "Reviewer names are supplied attestations, not independently verified identities."
+}

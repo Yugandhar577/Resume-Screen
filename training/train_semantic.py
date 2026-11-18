@@ -21,7 +21,7 @@ def document(row, kind):
     return f"{row['job_title']}\n{row['description']}\nRequired skills: {', '.join(row['must_have_skills'])}\nPreferred: {', '.join(row['nice_to_have_skills'])}"
 
 
-def evaluate(model, pairs, graphs, baseline=False, threshold=0.5):
+def evaluate(model, pairs, graphs, baseline=False, threshold=0.5, select_threshold=False, return_predictions=False):
     labels, scores, groups, candidates = [], [], [], []
     model.eval()
     with torch.inference_mode():
@@ -40,6 +40,10 @@ def evaluate(model, pairs, graphs, baseline=False, threshold=0.5):
             scores.extend(values); labels.extend(y for r, j, y in batch); groups.extend(j for r, j, y in batch)
             candidates.extend(r for r, j, y in batch)
     values = np.array(scores)
+    if select_threshold:
+        # Encode/predict once, then select on validation scores without 101 repeated model passes.
+        candidates_thresholds = np.linspace(0 if baseline else -1, 1, 101)
+        threshold = max(candidates_thresholds, key=lambda value: f1_score(labels, values >= value, zero_division=0))
     predicted = values >= threshold
     ranked = []
     for group in sorted(set(groups)):
@@ -54,11 +58,12 @@ def evaluate(model, pairs, graphs, baseline=False, threshold=0.5):
         reciprocal.append(next((1 / (index + 1) for index, (score, label, tie) in enumerate(rows) if label), 0))
     # Cosine is mapped to [0,1] only for a reliability diagnostic; it is not calibrated probability.
     mapped = np.clip(values if baseline else (values + 1) / 2, 0, 1)
-    return {'pairs': len(pairs), 'jobs': len(ranked), 'threshold': float(threshold), 'accuracy': float(accuracy_score(labels, predicted)),
+    report = {'pairs': len(pairs), 'jobs': len(ranked), 'threshold': float(threshold), 'accuracy': float(accuracy_score(labels, predicted)),
             'f1': float(f1_score(labels, predicted, zero_division=0)),
             'auc': float(roc_auc_score(labels, values)), 'recall_at_5': float(np.mean(recalls)),
             'mrr': float(np.mean(reciprocal)), 'brier_diagnostic': float(brier_score_loss(labels, mapped)),
             'calibrated': False, 'ranking_candidate_pool': 'sampled disjoint subset; not the full labor market'}
+    return (report,np.array(labels),values) if return_predictions else report
 
 
 def main():
@@ -68,6 +73,7 @@ def main():
     parser.add_argument('--resumes', type=int, default=600)
     parser.add_argument('--output', default='ml/models/gat_experimental')
     parser.add_argument('--evaluate-only', action='store_true')
+    parser.add_argument('--graph-mode', choices=['text','entity-v1'], default='text')
     args = parser.parse_args()
     torch.set_num_threads(4); torch.manual_seed(42); np.random.seed(42); random.seed(42)
     root = Path('Datasets/candidate-matching-synthetic')
@@ -101,7 +107,7 @@ def main():
         encoder_path.mkdir(parents=True, exist_ok=True)
         print('Downloading pinned Apache-2.0 sentence encoder...', flush=True)
         SentenceTransformer(MINILM_REPO, revision=MINILM_REVISION, token=False, trust_remote_code=False).save(str(encoder_path))
-    encoder = SemanticGraphEncoder(encoder_path)
+    encoder = SemanticGraphEncoder(encoder_path, args.graph_mode)
     texts = {row['resume_id']: document(row, 'resume') for _, row in resumes.iterrows()}
     texts.update({row['job_id']: document(row, 'job') for _, row in jobs.iterrows()})
     graphs = {'texts': texts}
@@ -128,17 +134,33 @@ def main():
         print(f'Epoch {epoch+1}: loss={np.mean(losses):.4f}, validation AUC={metrics["auc"]:.4f}', flush=True)
     model.load_state_dict(best_state)
     # Choose a classification threshold on validation only; test is never used to tune it.
-    threshold = max(np.linspace(-1, 1, 101), key=lambda value: evaluate(model, pairs['val'], graphs, threshold=value)['f1'])
-    report = {key: evaluate(model, pairs[key], graphs, threshold=threshold) for key in ('val', 'test')}
-    baseline_threshold = max(np.linspace(0, 1, 101), key=lambda value: evaluate(model, pairs['val'], graphs, baseline=True, threshold=value)['f1'])
-    report['baseline_val'] = evaluate(model, pairs['val'], graphs, baseline=True, threshold=baseline_threshold)
+    validation_report,validation_labels,validation_scores = evaluate(model, pairs['val'], graphs, select_threshold=True, return_predictions=True)
+    threshold = validation_report['threshold']
+    test_report,test_labels,test_scores = evaluate(model, pairs['test'], graphs, threshold=threshold, return_predictions=True)
+    report = {'val': validation_report, 'test': test_report}
+    from sklearn.isotonic import IsotonicRegression
+    calibrator = IsotonicRegression(out_of_bounds='clip').fit(validation_scores,validation_labels)
+    calibrated = calibrator.predict(test_scores)
+    bins = []
+    for start in np.linspace(0,.9,10):
+        mask = (calibrated >= start) & (calibrated <= 1 if start >= .9 else calibrated < start+.1)
+        if mask.any():
+            bins.append({'count':int(mask.sum()),'mean_estimate':float(calibrated[mask].mean()),'observed_synthetic_rate':float(test_labels[mask].mean())})
+    calibration = {'method':'Validation-only isotonic regression', 'x':calibrator.X_thresholds_.tolist(), 'y':calibrator.y_thresholds_.tolist(),
+                   'test_brier':float(brier_score_loss(test_labels,calibrated)), 'test_reliability_bins':bins,
+                   'test_ece':sum(b['count']*abs(b['mean_estimate']-b['observed_synthetic_rate']) for b in bins)/len(test_labels),
+                   'note':'Calibration targets synthetic relevance labels and the sampled benchmark prevalence only. It is not a real-world relevance or hiring probability.'}
+    report['baseline_val'] = evaluate(model, pairs['val'], graphs, baseline=True, select_threshold=True)
+    baseline_threshold = report['baseline_val']['threshold']
     report['baseline_test'] = evaluate(model, pairs['test'], graphs, baseline=True, threshold=baseline_threshold)
     output = Path(args.output); output.mkdir(parents=True, exist_ok=True)
     checkpoint = output / 'model.pt'; torch.save({'model_state_dict': model.state_dict()}, checkpoint)
-    manifest = {'version': 'gat-semantic-synthetic-v1', 'training_completed': True, 'experimental': True, 'environment': environment(),
+    manifest = {'version': 'gat-semantic-synthetic-'+args.graph_mode+'-v1', 'graph_mode':args.graph_mode,
+                'ner': {'package':'en_core_web_sm','version':'3.8.0','license':'MIT','type':'Pretrained general English NER plus canonical career vocabulary; not career-fine-tuned'} if args.graph_mode=='entity-v1' else None,
+                'training_completed': True, 'experimental': True, 'environment': environment(),
                 'checkpoint_sha256': hashlib.sha256(checkpoint.read_bytes()).hexdigest(), 'model_config': config,
                 'encoder_path': str(encoder_path), 'encoder': {'source': MINILM_REPO, 'revision': MINILM_REVISION, 'license': 'Apache-2.0'},
-                'dataset': provenance, 'evaluation': report, 'seed': 42, 'epochs': args.epochs,
+                'dataset': provenance, 'evaluation': report, 'calibration':calibration, 'seed': 42, 'epochs': args.epochs,
                 'supported_role_families': sorted(resumes['role'].unique().tolist()),
                 'classification_threshold': float(threshold), 'threshold_source': 'Validation F1 only',
                 'subset': {'jobs': args.jobs, 'resumes': args.resumes}, 'ranking_ties': 'Label-independent SHA256 ordering of query and candidate IDs',

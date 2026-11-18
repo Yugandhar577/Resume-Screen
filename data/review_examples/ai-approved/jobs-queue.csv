@@ -1,0 +1,235 @@
+source_id,text,Vague,Biased,Experience_Inflated,review_status,reviewer,review_type,review_note
+fictional-jd-01,"Fictional vacancy 01: Software Engineer.
+Document existing work clearly.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-02,"Fictional vacancy 02: Data Analyst.
+Coordinate with the assigned supervisor.
+Be the perfect culture fit and always go above and beyond.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-03,"Fictional vacancy 03: Accountant.
+Use approved processes and record decisions.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-04,"Fictional vacancy 04: Teacher.
+Review source information before sharing reports.
+Be a rockstar who can do everything.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-05,"Fictional vacancy 05: Nurse.
+Follow the team's written procedures.
+Male candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-06,"Fictional vacancy 06: Customer Support Specialist.
+Document existing work clearly.
+Handle unspecified tasks with unlimited flexibility.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-07,"Fictional vacancy 07: Project Coordinator.
+Coordinate with the assigned supervisor.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-08,"Fictional vacancy 08: Frontend Developer.
+Use approved processes and record decisions.
+Be the perfect culture fit and always go above and beyond.
+Male candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-09,"Fictional vacancy 09: Operations Assistant.
+Review source information before sharing reports.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-10,"Fictional vacancy 10: Designer.
+Follow the team's written procedures.
+Be a rockstar who can do everything.
+Young candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-11,"Fictional vacancy 11: Marketing Assistant.
+Document existing work clearly.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-12,"Fictional vacancy 12: Laboratory Assistant.
+Coordinate with the assigned supervisor.
+Handle unspecified tasks with unlimited flexibility.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-13,"Fictional vacancy 13: Software Engineer.
+Use approved processes and record decisions.
+Young candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-14,"Fictional vacancy 14: Data Analyst.
+Review source information before sharing reports.
+Be the perfect culture fit and always go above and beyond.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-15,"Fictional vacancy 15: Accountant.
+Follow the team's written procedures.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-16,"Fictional vacancy 16: Teacher.
+Document existing work clearly.
+Be a rockstar who can do everything.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-17,"Fictional vacancy 17: Nurse.
+Coordinate with the assigned supervisor.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-18,"Fictional vacancy 18: Customer Support Specialist.
+Use approved processes and record decisions.
+Handle unspecified tasks with unlimited flexibility.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-19,"Fictional vacancy 19: Project Coordinator.
+Review source information before sharing reports.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-20,"Fictional vacancy 20: Frontend Developer.
+Follow the team's written procedures.
+Be the perfect culture fit and always go above and beyond.
+Male candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-21,"Fictional vacancy 21: Operations Assistant.
+Document existing work clearly.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-22,"Fictional vacancy 22: Designer.
+Coordinate with the assigned supervisor.
+Be a rockstar who can do everything.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-23,"Fictional vacancy 23: Marketing Assistant.
+Use approved processes and record decisions.
+Male candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-24,"Fictional vacancy 24: Laboratory Assistant.
+Review source information before sharing reports.
+Handle unspecified tasks with unlimited flexibility.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-25,"Fictional vacancy 25: Software Engineer.
+Follow the team's written procedures.
+Young candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-26,"Fictional vacancy 26: Data Analyst.
+Document existing work clearly.
+Be the perfect culture fit and always go above and beyond.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-27,"Fictional vacancy 27: Accountant.
+Coordinate with the assigned supervisor.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-28,"Fictional vacancy 28: Teacher.
+Use approved processes and record decisions.
+Be a rockstar who can do everything.
+Young candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-29,"Fictional vacancy 29: Nurse.
+Review source information before sharing reports.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-30,"Fictional vacancy 30: Customer Support Specialist.
+Follow the team's written procedures.
+Handle unspecified tasks with unlimited flexibility.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-31,"Fictional vacancy 31: Project Coordinator.
+Document existing work clearly.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-32,"Fictional vacancy 32: Frontend Developer.
+Coordinate with the assigned supervisor.
+Be the perfect culture fit and always go above and beyond.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-33,"Fictional vacancy 33: Operations Assistant.
+Use approved processes and record decisions.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-34,"Fictional vacancy 34: Designer.
+Review source information before sharing reports.
+Be a rockstar who can do everything.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-35,"Fictional vacancy 35: Marketing Assistant.
+Follow the team's written procedures.
+Male candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-36,"Fictional vacancy 36: Laboratory Assistant.
+Document existing work clearly.
+Handle unspecified tasks with unlimited flexibility.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-37,"Fictional vacancy 37: Software Engineer.
+Coordinate with the assigned supervisor.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-38,"Fictional vacancy 38: Data Analyst.
+Use approved processes and record decisions.
+Be the perfect culture fit and always go above and beyond.
+Male candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-39,"Fictional vacancy 39: Accountant.
+Review source information before sharing reports.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-40,"Fictional vacancy 40: Teacher.
+Follow the team's written procedures.
+Be a rockstar who can do everything.
+Young candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-41,"Fictional vacancy 41: Nurse.
+Document existing work clearly.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-42,"Fictional vacancy 42: Customer Support Specialist.
+Coordinate with the assigned supervisor.
+Handle unspecified tasks with unlimited flexibility.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-43,"Fictional vacancy 43: Project Coordinator.
+Use approved processes and record decisions.
+Young candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-44,"Fictional vacancy 44: Frontend Developer.
+Review source information before sharing reports.
+Be the perfect culture fit and always go above and beyond.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-45,"Fictional vacancy 45: Operations Assistant.
+Follow the team's written procedures.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-46,"Fictional vacancy 46: Designer.
+Document existing work clearly.
+Be a rockstar who can do everything.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-47,"Fictional vacancy 47: Marketing Assistant.
+Coordinate with the assigned supervisor.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-48,"Fictional vacancy 48: Laboratory Assistant.
+Use approved processes and record decisions.
+Handle unspecified tasks with unlimited flexibility.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-49,"Fictional vacancy 49: Software Engineer.
+Review source information before sharing reports.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-50,"Fictional vacancy 50: Data Analyst.
+Follow the team's written procedures.
+Be the perfect culture fit and always go above and beyond.
+Male candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-51,"Fictional vacancy 51: Accountant.
+Document existing work clearly.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-52,"Fictional vacancy 52: Teacher.
+Coordinate with the assigned supervisor.
+Be a rockstar who can do everything.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-53,"Fictional vacancy 53: Nurse.
+Use approved processes and record decisions.
+Male candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-54,"Fictional vacancy 54: Customer Support Specialist.
+Review source information before sharing reports.
+Handle unspecified tasks with unlimited flexibility.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-55,"Fictional vacancy 55: Project Coordinator.
+Follow the team's written procedures.
+Young candidates only.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,1,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-56,"Fictional vacancy 56: Frontend Developer.
+Document existing work clearly.
+Be the perfect culture fit and always go above and beyond.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-57,"Fictional vacancy 57: Operations Assistant.
+Coordinate with the assigned supervisor.
+Experience is preferred; equivalent demonstrated practice is welcome.",0,0,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-58,"Fictional vacancy 58: Designer.
+Use approved processes and record decisions.
+Be a rockstar who can do everything.
+Young candidates only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-59,"Fictional vacancy 59: Marketing Assistant.
+Review source information before sharing reports.
+This is an entry-level training role requiring no prior professional experience. Applicants must nevertheless have 12 years of professional experience.",0,0,1,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."
+fictional-jd-60,"Fictional vacancy 60: Laboratory Assistant.
+Follow the team's written procedures.
+Handle unspecified tasks with unlimited flexibility.
+Native English speakers only.
+Experience is preferred; equivalent demonstrated practice is welcome.",1,1,0,approved,Codex AI review,ai,"AI review: binary labels match the explicit wording and supplied definitions. Bias indicates wording requiring context review, not a legal finding."

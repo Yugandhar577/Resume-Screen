@@ -28,6 +28,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY main.py ./
 COPY ml ./ml
 COPY integrations ./integrations
+COPY public/fonts ./public/fonts
+COPY data/india_salary_references.json ./data/india_salary_references.json
 RUN useradd --create-home --uid 10001 careerlens
 USER careerlens
 

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "sources": {
+    "syncwell-2025": {
+      "title": "Syncwell India IT salary report 2025",
+      "url": "https://syncwell.co.in/syncwell-infotech-2025-it-software-salary-survey-report/",
+      "as_of": "2025",
+      "country": "India",
+      "currency": "INR",
+      "pay_basis": "ctc",
+      "geography": "India; observations primarily Pune, Bengaluru, Hyderabad and NCR",
+      "method": "Recruiter-reported offers and hiring observations; sample size and percentiles unavailable"
+    },
+    "foundit-oct2025": {
+      "title": "foundit India Salary Trends, October 2025",
+      "url": "https://www.foundit.in/career-advice/wp-content/uploads/2025/11/Salary-Trends-Report.pdf",
+      "as_of": "2025-10",
+      "country": "India",
+      "currency": "INR",
+      "pay_basis": "unspecified",
+      "geography": "India nationwide industry reference; no city breakdown",
+      "method": "Published minimum/maximum average salary bands; not individual percentiles"
+    }
+  },
+  "role_ranges": [
+    ["Full Stack Developer", 2, 6, 8, 18],
+    ["Java/.NET Backend Developer", 3, 7, 10, 20],
+    ["React/Angular Frontend Developer", 2, 5, 7, 15],
+    ["DevOps Engineer", 3, 6, 12, 22],
+    ["Cloud Architect", 8, 12, 25, 40],
+    ["Data Analyst", 1, 3, 6, 10],
+    ["Data Engineer", 3, 6, 12, 20],
+    ["ML/AI Engineer", 2, 5, 15, 28]
+  ],
+  "experience_bands": [[0,3],[4,6],[7,10],[11,15],[15,60]],
+  "industry_ranges": {
+    "Computer Software": [[5.02,9.23],[12.23,20.26],[17.04,26.27],[24.46,35.83],[51.47,67.84]],
+    "Analytics": [[3.74,7.08],[11.36,17.83],[15.46,23.27],[21.18,30.64],[38.27,47.82]],
+    "Artificial Intelligence": [[7.92,13.76],[14.68,23.64],[20.14,30.13],[27.86,39.84],[63.38,79.68]],
+    "Accounting": [[3.35,5.71],[8.12,12.15],[15.50,21.50],[21.28,27.60],[29.08,36.80]]
+  }
+}

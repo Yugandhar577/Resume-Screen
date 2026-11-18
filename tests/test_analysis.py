@@ -36,7 +36,7 @@ def pdf_bytes(text=None, password=None, pages=1):
 
 class AnalysisTests(unittest.TestCase):
     def setUp(self):
-        self.env = patch.dict(os.environ, {'GROQ_API_KEY': ''})
+        self.env = patch.object(main.local_model, 'status', return_value={'available': False, 'model': 'unit-test-local', 'reason': 'Unit test'})
         self.env.start()
         self.addCleanup(self.env.stop)
         self.client = TestClient(main.app)
@@ -138,15 +138,16 @@ class AnalysisTests(unittest.TestCase):
         self.assertFalse(status['capabilities']['generative_rewriting'])
 
     def test_ai_is_opt_in_and_cannot_overwrite_matching(self):
-        with patch.object(main.HiringSimulator, 'is_configured', return_value=True), patch.object(main.HiringSimulator, 'review', return_value={'atsFeedback': 'ATS review', 'techFeedback': 'Technical review', 'hrFeedback': 'Recruiter review'}) as review:
+        payload = {'reviewers': [{'persona': name, 'strengths': [], 'concerns': [], 'recommendations': ['Review evidence']} for name in ('ATS & structure', 'Technical evidence', 'Recruiter clarity')], 'rejected_unverified_items': 0}
+        with patch.object(main, 'review_locally', return_value=payload) as review:
             self.analyze()
             review.assert_not_called()
             result = self.analyze(useAI=True).json()
             self.assertEqual(result['analysis']['atsScore'], 100)
-            self.assertEqual(result['review_method'], 'Groq')
+            self.assertEqual(result['review_method'], 'Local_Ollama')
 
     def test_ai_failure_returns_computed_results_with_warning(self):
-        with patch.object(main.HiringSimulator, 'is_configured', return_value=True), patch.object(main.HiringSimulator, 'review', side_effect=ValueError('secret')):
+        with patch.object(main, 'review_locally', side_effect=ValueError('secret')):
             result = self.analyze(useAI=True).json()
             self.assertEqual(result['analysis']['atsScore'], 100)
             self.assertEqual(result['review_method'], 'Rule_Based')

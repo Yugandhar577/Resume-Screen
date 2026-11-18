@@ -1,0 +1,5 @@
+'use client'
+export type EvidenceReport={available:boolean;reason?:string;note?:string;items?:{job_quote:string;resume_passages:{quote:string;similarity:number;qualifier_review:boolean}[]}[]}
+export default function EvidenceMatching({report}:{report:EvidenceReport}){
+  return <section className="border border-neutral-200 rounded-lg p-5 space-y-4"><h3 className="font-medium">Semantic Requirement Evidence</h3><p className="text-xs text-neutral-500">{report.available?report.note:report.reason}</p>{report.items?.map((item,i)=><details key={i} className="text-sm border-t border-neutral-100 pt-3"><summary className="cursor-pointer">{item.job_quote}</summary>{item.resume_passages.map((passage,j)=><blockquote key={j} className="mt-3 border-l-2 pl-3"><p>{passage.quote}</p><p className="text-xs text-neutral-500 mt-2">Text similarity {passage.similarity.toFixed(3)} · {passage.qualifier_review?'Negation or limited proficiency needs review':'Verify requirement, context and proficiency'}</p></blockquote>)}</details>)}</section>
+}

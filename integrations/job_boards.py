@@ -57,3 +57,40 @@ class Arbeitnow:
         selected = [job for job in self.cached if all(word in (job['title']+' '+job['description']).casefold() for word in words)]
         return {'jobs': selected[:limit], 'source': 'Arbeitnow', 'source_url': 'https://www.arbeitnow.com',
                 'note': 'Public API listings, cached for six hours. Check location, language, and eligibility on the source listing. No applications are submitted.'}
+
+
+class RemoteOK:
+    endpoint = 'https://remoteok.com/api'
+
+    def __init__(self):
+        self.cached = None; self.updated = 0; self.lock = Lock()
+
+    def search(self, query='', limit=10):
+        with self.lock:
+            if self.cached is None or time.monotonic()-self.updated > 21600:
+                with requests.get(self.endpoint, timeout=15, stream=True, allow_redirects=False,
+                                  headers={'User-Agent':'CareerLens local JD import'}) as response:
+                    response.raise_for_status()
+                    body = bytearray()
+                    for chunk in response.iter_content(65536):
+                        body.extend(chunk)
+                        if len(body) > 4*1024*1024:
+                            raise ValueError('Job feed exceeds the allowed size.')
+                    data = json.loads(body)
+                jobs = []
+                for item in data[:101]:
+                    if not isinstance(item, dict) or not item.get('position'):
+                        continue  # The first row is source terms, not a vacancy.
+                    url = item.get('url', '')
+                    parsed = urlparse(url)
+                    if parsed.scheme != 'https' or parsed.hostname not in ('remoteok.com','www.remoteok.com') or parsed.username or parsed.password:
+                        continue
+                    jobs.append({'id':'remoteok-'+str(item['id']), 'title':str(item['position']), 'company':str(item.get('company','')),
+                                 'description':plain_text(item.get('description',''))[:50000], 'url':url,
+                                 'location':str(item.get('location','Remote')), 'remote':True,
+                                 'source':'Remote OK', 'source_url':'https://remoteok.com'})
+                self.cached, self.updated = jobs, time.monotonic()
+        words = query.casefold().split()
+        selected = [job for job in self.cached if all(word in (job['title']+' '+job['description']).casefold() for word in words)]
+        return {'jobs':selected[:limit], 'source':'Remote OK','source_url':'https://remoteok.com',
+                'note':'Source-attributed public remote listings, cached for six hours. Check location and eligibility on the original listing.'}

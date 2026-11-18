@@ -1,9 +1,16 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import JobBoard from './job-board'
+import CareerExplorer from './career-explorer'
+import MarketTools from './market-tools'
+import EvidenceMatching, {type EvidenceReport} from './evidence-matching'
+import SemanticInsights, { type SemanticReport } from './semantic-insights'
+import ResearchInsights, { type JDExperiment } from './research-insights'
+import LocalInsights, { type LocalReport } from './local-insights'
+import Link from 'next/link'
 import { Upload, FileText, Target, Download, Brain, BarChart3, Zap, TrendingUp, Shield, CheckCircle, AlertCircle, Activity, Network, Database, Play, Briefcase, Code, Globe, Sparkles, ChevronDown } from 'lucide-react'
 
-type SystemStatus = { status: string; analysis_mode?: string; ml_engine: boolean; groq_available: boolean; semantic_model?: { available: boolean; experimental: boolean; reason?: string }; capabilities?: { ocr: boolean } } | null
+type SystemStatus = { status: string; analysis_mode?: string; ml_engine: boolean; local_ai?: { available: boolean; model: string; reason?: string }; semantic_model?: { available: boolean; experimental: boolean; reason?: string }; capabilities?: { ocr: boolean } } | null
 type Analysis = { atsScore: number | null; atsFeedback: string; techFeedback: string; hrFeedback: string; skillGaps: string[]; recommendations: string[] } | null
 type GraphNode = { id: string; type: string; weight: number }
 type GraphEdge = { source: string; target: string; weight: number }
@@ -15,41 +22,60 @@ type DetailedResults = {
   skill_evidence?: Record<string, string[]>
   requirements?: { items: Requirement[]; note: string }
   reviewers?: Reviewer[]
-  semantic_matching?: { available: boolean; similarity?: number; reason?: string; note?: string; attention?: Record<string, { quote: string; attention: number }[]>; provenance?: { version: string; experimental: boolean } }
+  local_review?: LocalReport
+  evidence_matching?: EvidenceReport
+  jd_experiment?: JDExperiment
+  score_explanation?: { method: string; note: string; items: { skill: string; score_without_skill: number; point_change: number }[] }
+  semantic_matching?: SemanticReport
 } | null
 type EditProposal = { id: string; line: number; original: string; proposed: string; evidence: string; reason: string }
 type Requirement = { kind: string; requirement: string; priority: string; status: string; evidence: string[]; note: string; job_quote: string }
 type Reviewer = { persona: string; method: string; rubric: string; strengths: { statement: string; evidence: string[] }[]; concerns: { statement: string; evidence: string[] }[]; recommendations: string[] }
-type Optimization = { method: string; changes: string[]; note: string; sourceResume?: string; proposals?: EditProposal[]; templates?: { id: string; label: string }[]; applied_edits?: EditProposal[] } | null
+type Optimization = { method: string; changes: string[]; note: string; sourceResume?: string; proposals?: EditProposal[]; templates?: { id: string; label: string }[]; applied_edits?: EditProposal[]; proposalToken?: string } | null
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a'); link.href = url; link.download = filename; link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
 
 function GraphViz({ nodes, edges, color }: { nodes: GraphNode[]; edges: GraphEdge[]; color: string }) {
-  const W = 480, H = 280
+  const W = 400, H = 350
   if (!nodes.length) return <div className="flex items-center justify-center h-40 text-neutral-500 text-sm">No graph data</div>
   const list = nodes.slice(0, 12)
   const positioned = list.map((n, i, arr) => {
     const angle = (2 * Math.PI * i) / arr.length - Math.PI / 2
-    const r = arr.length <= 1 ? 0 : Math.min(W / 2 - 55, H / 2 - 45)
+    const r = arr.length <= 1 ? 0 : 138
     return { ...n, x: W / 2 + r * Math.cos(angle), y: H / 2 + r * Math.sin(angle) }
   })
   const posMap: Record<string, { x: number; y: number }> = {}
   positioned.forEach(n => { posMap[n.id] = { x: n.x, y: n.y } })
   const sc: Record<string, string> = { skill: color, role: '#525252', company: '#a3a3a3' }
+  const visibleEdges = edges.filter(e => posMap[e.source] && posMap[e.target]).slice(0, 20)
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto bg-neutral-50 rounded-md">
-      {edges.slice(0, 20).map((e, i) => {
+    <div className="entity-graph">
+    <svg viewBox={`0 0 ${W} ${H}`} className="entity-graph-canvas" role="img" aria-label="Entity connections. Numbered nodes correspond to the full names listed below.">
+      {visibleEdges.map((e, i) => {
         const s = posMap[e.source], t = posMap[e.target]
         if (!s || !t) return null
         return <line key={i} x1={s.x} y1={s.y} x2={t.x} y2={t.y} stroke="#d4d4d4" strokeWidth={1.5} />
       })}
       {positioned.map((n, i) => (
         <g key={i}>
-          <circle cx={n.x} cy={n.y} r={20} fill="white" stroke={sc[n.type] ?? '#d4d4d4'} strokeWidth={2.5} />
-          <text x={n.x} y={n.y+1} textAnchor="middle" dominantBaseline="middle" fontSize={9} fontWeight="700" fill={sc[n.type]??'#737373'}>{n.type==='skill'?'SK':n.type==='role'?'RL':'CO'}</text>
-          <text x={n.x} y={n.y+33} textAnchor="middle" fontSize={8.5} fill="#171717" fontWeight="600">{n.id.length>12?n.id.slice(0,11)+'...':n.id}</text>
-          <title>{n.id} ({n.type})</title>
+          <circle cx={n.x} cy={n.y} r={21} fill="white" stroke={sc[n.type] ?? '#d4d4d4'} strokeWidth={2} />
+          <text x={n.x} y={n.y+1} textAnchor="middle" dominantBaseline="middle" fontSize={16} fontWeight="600" fill="#171717">{i + 1}</text>
+          <title>{i + 1}. {n.id} ({n.type})</title>
         </g>
       ))}
     </svg>
+    <ol className="entity-graph-key" aria-label="Graph node names">
+      {list.map((n, i) => <li key={n.id} className="entity-graph-key-item">
+        <span className="entity-graph-number" style={{ borderColor: sc[n.type] ?? '#d4d4d4' }} aria-hidden="true">{i + 1}</span>
+        <span className="entity-graph-name">{n.id}<span className="entity-graph-type">{n.type}</span></span>
+      </li>)}
+    </ol>
+    {(nodes.length > list.length || edges.length > visibleEdges.length) && <p className="text-xs text-neutral-500">Showing {list.length} of {nodes.length} nodes and {visibleEdges.length} of {edges.length} connections.</p>}
+    </div>
   )
 }
 
@@ -230,11 +256,17 @@ export default function CareerLens() {
   const [accessToken, setAccessToken] = useState('')
   const authHeaders: Record<string, string> = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
   const [useSemantic, setUseSemantic] = useState(false)
+  const [useResearch, setUseResearch] = useState(false)
+  const [useEvidence, setUseEvidence] = useState(true)
+  const [rewriteEngine, setRewriteEngine] = useState('gemma')
   const [useOCR, setUseOCR] = useState(false)
   const [pdfPassword, setPdfPassword] = useState('')
   const [acceptedEdits, setAcceptedEdits] = useState<string[]>([])
   const [template, setTemplate] = useState('original')
   const [editLoading, setEditLoading] = useState(false)
+  const [proposalLoading, setProposalLoading] = useState(false)
+  const [sourceDraft, setSourceDraft] = useState('')
+  const [proposalNote, setProposalNote] = useState('')
   const [comparison, setComparison] = useState<{ before: number | null; after: number | null; delta: number | null } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -243,9 +275,10 @@ export default function CareerLens() {
     try {
       const response = await fetch('/health', { signal: AbortSignal.timeout(10000) })
       if (!response.ok) throw new Error('Backend unavailable')
-      setSystemStatus(await response.json())
+      const status = await response.json()
+      setSystemStatus(status)
     }
-    catch { setSystemStatus({ status: 'offline', ml_engine: false, groq_available: false }) }
+    catch { setSystemStatus({ status: 'offline', ml_engine: false }) }
   }
 
   const loadSample = (key: string) => {
@@ -259,7 +292,7 @@ export default function CareerLens() {
     resetResults()
     setAnalyzedJob(jobDescription)
     try {
-      const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders }, body: JSON.stringify({ resume, jobDescription, useAI, useSemantic }), signal: AbortSignal.timeout(60000) })
+      const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders }, body: JSON.stringify({ resume, jobDescription, useAI, useSemantic, useResearch, useEvidence }), signal: AbortSignal.timeout(330000) })
       await applyResponse(response)
     } catch (e) { setError(e instanceof Error ? e.message : 'Analysis failed') } finally { setLoading(false) }
   }
@@ -271,8 +304,10 @@ export default function CareerLens() {
       const form = new FormData(); form.append('file', file); form.append('jobDescription', jobDescription)
       form.append('useAI', String(useAI))
       form.append('useSemantic', String(useSemantic))
+      form.append('useResearch', String(useResearch))
+      form.append('useEvidence',String(useEvidence))
       form.append('useOCR', String(useOCR)); form.append('pdfPassword', pdfPassword)
-      const response = await fetch('/api/analyze-pdf', { method: 'POST', headers: authHeaders, body: form, signal: AbortSignal.timeout(60000) })
+      const response = await fetch('/api/analyze-pdf', { method: 'POST', headers: authHeaders, body: form, signal: AbortSignal.timeout(390000) })
       await applyResponse(response)
     } catch (e) { setError(e instanceof Error ? e.message : 'PDF analysis failed') } finally { setLoading(false) }
   }
@@ -281,6 +316,7 @@ export default function CareerLens() {
     setLoading(true); setError(''); setWarnings([]); setAnalysis(null); setOptimizedResume('');
     setDetailedResults(null); setGraphData(null); setOptimization(null); setActiveTab('results')
     setAcceptedEdits([]); setTemplate('original'); setComparison(null)
+    setProposalNote(''); setSourceDraft('')
   }
 
   const applyResponse = async (response: Response) => {
@@ -291,6 +327,7 @@ export default function CareerLens() {
     setGraphData(data.detailed_results?.graph_analysis ?? null); setOptimization(data.optimization ?? null)
     setWarnings(data.warnings ?? []); setReviewMethod(data.review_method ?? 'Rule_Based')
     setComparison(data.comparison ?? null)
+    setSourceDraft(data.optimization?.sourceResume ?? '')
   }
 
   const previewEdits = async () => {
@@ -298,23 +335,50 @@ export default function CareerLens() {
     setEditLoading(true); setError('')
     try {
       const response = await fetch('/api/optimize-preview', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ resume: optimization.sourceResume, jobDescription: analyzedJob, acceptedEdits, template }), signal: AbortSignal.timeout(60000) })
+        body: JSON.stringify({ resume: optimization.sourceResume, jobDescription: analyzedJob, acceptedEdits, template, proposalToken: optimization.proposalToken ?? '' }), signal: AbortSignal.timeout(60000) })
       await applyResponse(response)
     } catch (e) { setError(e instanceof Error ? e.message : 'Edit preview failed') }
     finally { setEditLoading(false) }
+  }
+
+  const generateLocalEdits = async () => {
+    if (!optimization?.sourceResume) return
+    setProposalLoading(true); setError(''); setProposalNote('')
+    try {
+      const response = await fetch('/api/rewrite-proposals', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ resume: optimization.sourceResume, jobDescription: analyzedJob, engine: rewriteEngine }), signal: AbortSignal.timeout(630000) })
+      const data = await response.json()
+      if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Local proposals unavailable')
+      setOptimization(current => current ? { ...current, proposals: data.proposals, proposalToken: data.proposalToken } : current)
+      setAcceptedEdits([]); setProposalNote(`${data.note} Rejected proposals: ${data.rejected}.`)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Local proposals unavailable') }
+    finally { setProposalLoading(false) }
+  }
+
+  const reanalyzeSource = async () => {
+    if (!sourceDraft.trim()) return
+    const corrected = sourceDraft
+    resetResults()
+    try {
+      const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ resume: corrected, jobDescription: analyzedJob, useAI, useSemantic, useResearch, useEvidence }), signal: AbortSignal.timeout(330000) })
+      await applyResponse(response)
+      setResume(corrected); setUploadMode('text'); setSelectedFile(null)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Corrected text analysis failed') }
+    finally { setLoading(false) }
   }
 
   const downloadAsPDF = async () => {
     if (!optimizedResume) return
     setError('')
     try {
-      const { createResumePDF } = await import('../lib/resume-pdf.mjs')
-      const response = await fetch('/fonts/NotoSans-Regular.ttf')
-      if (!response.ok) throw new Error('Could not load the PDF font. Please retry.')
-      const bytes = new Uint8Array(await response.arrayBuffer())
-      let binary = ''
-      for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...Array.from(bytes.slice(i, i + 8192)))
-      createResumePDF(optimizedResume, btoa(binary)).save('careerlens-resume.pdf')
+      const response = await fetch('/api/export-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ resume: optimizedResume }), signal: AbortSignal.timeout(60000) })
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(typeof data?.detail === 'string' ? data.detail : 'PDF export failed. Check the local backend connection.')
+      }
+      downloadBlob(await response.blob(), 'careerlens-resume.pdf')
     } catch (e) { setError(e instanceof Error ? e.message : 'PDF export failed') }
   }
 
@@ -327,6 +391,8 @@ export default function CareerLens() {
     { id: 'optimize' as const, label: 'Resume', icon: <Sparkles className="w-3.5 h-3.5" /> },
   ]
   return (
+    <>
+    <article className="print-resume" aria-hidden="true">{optimizedResume}</article>
     <div className="min-h-screen bg-white">
       <header className="bg-white border-b border-neutral-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
@@ -337,10 +403,6 @@ export default function CareerLens() {
           <nav className="hidden md:flex items-center gap-6">
             {tabs.map(t => (<button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex items-center gap-1.5 px-1 py-2 border-b-2 text-sm font-medium transition-colors ${activeTab === t.id ? 'border-black text-black' : 'border-transparent text-neutral-500 hover:text-black'}`}>{t.icon}{t.label}</button>))}
           </nav>
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-black' : 'border border-neutral-400 bg-white'}`} />
-            <span className="text-xs text-neutral-500 font-mono">{systemStatus?.status ?? 'connecting...'}</span>
-          </div>
         </div>
       </header>
       <main className="max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
@@ -357,7 +419,7 @@ export default function CareerLens() {
               <p className="text-neutral-600 text-base sm:text-lg leading-relaxed max-w-xl">Compare your resume with a job, review skill evidence, and export a clean copy.</p>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-3">
-              {[{ icon: <Brain className="w-3.5 h-3.5" />, label: 'Skill Coverage', on: isOnline }, { icon: <Zap className="w-3.5 h-3.5" />, label: 'Groq reviewers configured', on: systemStatus?.groq_available }, { icon: <Network className="w-3.5 h-3.5" />, label: 'Entity Graphs', on: isOnline }, { icon: <Shield className="w-3.5 h-3.5" />, label: 'JD Phrase Screening', on: isOnline }].map(({ icon, label, on }, i) => (<div key={i} className={`flex items-center gap-1.5 text-xs ${on ? 'text-neutral-800' : 'text-neutral-500'}`}>{icon}{label}</div>))}
+              {[{ icon: <Brain className="w-3.5 h-3.5" />, label: 'Skill Coverage', on: isOnline }, { icon: <Zap className="w-3.5 h-3.5" />, label: 'Local Gemma', on: systemStatus?.local_ai?.available }, { icon: <Network className="w-3.5 h-3.5" />, label: 'Entity Graphs', on: isOnline }, { icon: <Shield className="w-3.5 h-3.5" />, label: 'JD Phrase Screening', on: isOnline }].map(({ icon, label, on }, i) => (<div key={i} className={`flex items-center gap-1.5 text-xs ${on ? 'text-neutral-800' : 'text-neutral-500'}`}>{icon}{label}</div>))}
             </div>
 
             {/* Sample Dataset Selector */}
@@ -417,8 +479,14 @@ export default function CareerLens() {
                 <JobBoard accessToken={accessToken} onSelect={description => { setJobDescription(description); setSelectedSample('') }} />
               </div>
             </div>
+            <label className="flex gap-3 text-sm text-neutral-600"><input type="checkbox" checked={useEvidence} onChange={e=>setUseEvidence(e.target.checked)}/><span>Find related resume passages for each job requirement with the local semantic encoder. Source quotes need qualification review.</span></label>
+            <label className="flex gap-3 text-sm text-neutral-600"><input type="checkbox" checked={useResearch} onChange={e => setUseResearch(e.target.checked)} /><span>Include experimental BERT wording analysis. Trained on AI-reviewed fictional examples.</span></label>
             {systemStatus?.semantic_model?.available && <label className="flex gap-3 text-sm text-neutral-600"><input type="checkbox" checked={useSemantic} onChange={e => setUseSemantic(e.target.checked)} /><span>Include experimental local semantic matching. Evaluated on synthetic data only; the baseline score stays separate.</span></label>}
-            {systemStatus?.groq_available && <label className="flex items-start justify-center gap-3 text-sm text-neutral-600"><input type="checkbox" checked={useAI} onChange={e => setUseAI(e.target.checked)} className="mt-1 accent-black" /><span>Send my resume and job description to Groq for optional AI reviewer feedback. Otherwise processing stays on this backend.</span></label>}
+            <section className="border border-neutral-200 rounded-lg p-5 space-y-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-medium">Detailed AI review</h2><button onClick={() => checkStatus()} className="underline text-neutral-600">Refresh connection</button></div>
+              <p>{systemStatus?.local_ai?.model ?? 'Gemma via Ollama'} · {systemStatus?.local_ai?.reason ?? 'Waiting for backend connection'}</p>
+              <label className="flex items-start gap-3 text-neutral-600"><input type="checkbox" disabled={!systemStatus?.local_ai?.available} checked={useAI} onChange={e => setUseAI(e.target.checked)} className="mt-1 accent-black" /><span><span className="block font-medium text-neutral-900">Include detailed AI review</span><span className="block mt-1">Add ATS, technical, and recruiter feedback, contextual qualification review, and career ideas using Gemma on this computer. This may take a few minutes. Skill coverage and qualification checks run locally on every analysis.</span></span></label>
+            </section>
             <div className="flex justify-center pt-4">
               <button onClick={runAnalysis} disabled={loading || (uploadMode === 'text' ? !resume.trim() : !selectedFile) || !jobDescription.trim()} className="flex items-center gap-3 bg-neutral-900 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm px-8 py-3.5 rounded-md transition-colors">
                 {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Analyzing...</span></>) : (<><Brain className="w-5 h-5" /><span>Analyze Resume</span><Zap className="w-4 h-4" /></>)}
@@ -441,7 +509,7 @@ export default function CareerLens() {
                   <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-4xl font-black text-neutral-900">{analysis.atsScore ?? 'N/A'}</span><span className="text-neutral-500 text-xs font-medium">/100</span></div>
                 </div>
                 <div className="flex-1 space-y-4">
-                  <div><h2 className="text-2xl font-bold text-neutral-900">Recognized Skill Coverage</h2><p className="text-neutral-500 text-sm mt-1">{reviewMethod === 'Groq' ? 'Rule-based coverage with AI reviewer perspectives' : 'Coverage uses evidence rules. Optional semantic results are separate.'}</p></div>
+                  <div><h2 className="text-2xl font-bold text-neutral-900">Recognized Skill Coverage</h2><p className="text-neutral-500 text-sm mt-1">{reviewMethod === 'Local_Ollama' ? 'Rule-based coverage with local AI reviewer perspectives' : 'Coverage uses evidence rules. Optional semantic results are separate.'}</p></div>
                   {detailedResults?.matching && (<div className="grid grid-cols-3 gap-3">{[{ label: 'Skill-set Similarity', value: `${(detailedResults.matching.graph_similarity*100).toFixed(0)}%` }, { label: 'Skill Matches', value: detailedResults.matching.skill_overlap?.length??0 }, { label: 'Skill Gaps', value: detailedResults.matching.missing_skills?.length??0 }].map(({ label, value }, i) => (<div key={i} className="bg-neutral-50 border border-neutral-100 rounded-md p-4 text-center"><div className="text-2xl font-bold text-neutral-900">{value}</div><div className="text-neutral-500 text-xs mt-1">{label}</div></div>))}</div>)}
                 </div>
               </div>
@@ -452,8 +520,13 @@ export default function CareerLens() {
               {detailedResults?.matching?.skill_overlap.length ? <div className="bg-white border border-neutral-200 rounded-lg p-5"><h3 className="font-semibold text-sm mb-3">Resume Evidence for Matched Skills</h3>{detailedResults.matching.skill_overlap.map(skill => <details key={skill} className="py-2 border-b border-neutral-100"><summary className="cursor-pointer text-sm font-medium">{skill}</summary>{detailedResults.skill_evidence?.[skill]?.map((line, i) => <p key={i} className="mt-2 pl-3 border-l-2 text-sm text-neutral-600">{line}</p>)}</details>)}</div> : null}
               {detailedResults?.requirements && <section className="border border-neutral-200 rounded-lg p-5 space-y-4"><h3 className="font-medium">Qualification Evidence Checklist</h3><p className="text-sm text-neutral-500">{detailedResults.requirements.note}</p>{detailedResults.requirements.items.map((item, i) => <details key={i} className="border-t border-neutral-100 pt-3"><summary className="text-sm cursor-pointer">{item.requirement} · {item.priority} · {item.status.replaceAll('_', ' ')}</summary><p className="mt-2 text-xs text-neutral-500">Job: {item.job_quote}</p>{item.evidence.map((quote, j) => <p key={j} className="pl-3 border-l-2 mt-2 text-sm">{quote}</p>)}<p className="mt-2 text-xs text-neutral-500">{item.note}</p></details>)}</section>}
               {detailedResults?.reviewers?.map((reviewer, i) => <section key={i} className="border border-neutral-200 rounded-lg p-5 space-y-3"><h3 className="font-medium">{reviewer.persona}</h3><p className="text-xs text-neutral-500">{reviewer.method} · {reviewer.rubric}</p>{[...reviewer.strengths, ...reviewer.concerns].map((finding, j) => <div key={j}><p className="text-sm">{finding.statement}</p>{finding.evidence.map((quote, k) => <blockquote key={k} className="mt-2 pl-3 border-l-2 text-sm text-neutral-500">{quote}</blockquote>)}</div>)}{reviewer.recommendations.map((rec, j) => <p key={j} className="text-sm text-neutral-600">{rec}</p>)}</section>)}
-              {detailedResults?.semantic_matching && <section className="border border-neutral-200 rounded-lg p-5 space-y-3"><h3 className="font-medium">Experimental Semantic Similarity</h3><p className="text-sm">{detailedResults.semantic_matching.available ? detailedResults.semantic_matching.similarity : detailedResults.semantic_matching.reason}</p><p className="text-xs text-neutral-500">{detailedResults.semantic_matching.note}</p>{Object.entries(detailedResults.semantic_matching.attention ?? {}).map(([name, chunks]) => <details key={name}><summary className="text-sm cursor-pointer">{name} model attention (not causal attribution)</summary>{chunks.map((chunk, i) => <p key={i} className="text-sm mt-2">{chunk.attention.toFixed(3)} · {chunk.quote}</p>)}</details>)}</section>}
-              <p className="text-sm text-neutral-500">Career trajectory predictions are not available in this version.</p>
+              {detailedResults?.evidence_matching && <EvidenceMatching report={detailedResults.evidence_matching}/>}
+              {detailedResults?.jd_experiment && <ResearchInsights report={detailedResults.jd_experiment} />}
+              {detailedResults?.semantic_matching && <SemanticInsights report={detailedResults.semantic_matching} />}
+              <MarketTools resume={optimization?.sourceResume || sourceDraft} jobDescription={analyzedJob} headers={authHeaders} />
+              {useResearch && <CareerExplorer headers={authHeaders} />}
+              {detailedResults?.local_review && <LocalInsights report={detailedResults.local_review} />}
+              {optimization?.sourceResume && <details className="border border-neutral-200 rounded-lg p-5"><summary className="font-medium cursor-pointer">Review or Correct Extracted Resume Text</summary><p className="mt-3 text-sm text-neutral-500">Check reading order and OCR before using these results. Corrections start a fresh analysis and discard old proposals.</p><textarea aria-label="Extracted resume text" maxLength={50000} value={sourceDraft} onChange={e => setSourceDraft(e.target.value)} className="w-full h-64 mt-3 border border-neutral-200 p-3 rounded-md text-sm" /><button onClick={reanalyzeSource} disabled={loading || !sourceDraft.trim()} className="mt-3 bg-black text-white rounded-md px-4 py-2 disabled:opacity-40">Analyze corrected text</button></details>}
               <div className="flex justify-center pt-2"><button onClick={() => setActiveTab('optimize')} className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-medium px-6 py-3 rounded-md transition-colors"><Sparkles className="w-4 h-4" />View Clean Resume</button></div>
             </>)}
           </div>
@@ -461,19 +534,18 @@ export default function CareerLens() {
 
         {activeTab === 'graphs' && (
           <div className="space-y-6">
+            {detailedResults?.score_explanation && <section className="border border-neutral-200 rounded-lg p-5 space-y-3"><h3 className="font-medium">What Changes the Coverage Score</h3><p className="text-sm text-neutral-500">{detailedResults.score_explanation.note}</p>{detailedResults.score_explanation.items.map(item => <p key={item.skill} className="text-sm">Without {item.skill}: {item.score_without_skill}/100 ({item.point_change} points lower)</p>)}</section>}
             <p className="text-sm text-neutral-500">Edges show entities mentioned on the same line. Diagrams display up to 12 nodes and 20 edges; the lists below contain all detected nodes.</p>
             {!graphData ? (<div className="flex flex-col items-center justify-center py-32 gap-4 text-center"><div className="w-20 h-20 rounded-lg bg-neutral-100 flex items-center justify-center"><Network className="w-9 h-9 text-neutral-300" /></div><p className="font-semibold text-neutral-500 text-lg">No graph data yet</p><p className="text-neutral-500 text-sm">Run an analysis to generate entity graphs</p><button onClick={() => setActiveTab('input')} className="mt-2 px-6 py-2.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-700 transition-colors">Go to Analyze</button></div>) : (<>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[{ label: 'Resume Nodes', value: graphData.resume_graph?.nodes?.length??0, icon: <Database className="w-4 h-4" /> }, { label: 'Resume Edges', value: graphData.resume_graph?.edges?.length??0, icon: <Network className="w-4 h-4" /> }, { label: 'JD Nodes', value: graphData.jd_graph?.nodes?.length??0, icon: <Target className="w-4 h-4" /> }, { label: 'JD Edges', value: graphData.jd_graph?.edges?.length??0, icon: <Activity className="w-4 h-4" /> }].map(({ label, value, icon }, i) => (<div key={i} className="bg-white border border-neutral-200 rounded-lg p-5 text-center"><div className="flex justify-center text-neutral-500 mb-2">{icon}</div><div className="text-3xl font-bold text-neutral-900">{value}</div><div className="text-neutral-500 text-xs mt-1">{label}</div></div>))}</div>
               <div className="grid lg:grid-cols-2 gap-6">
-                <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
-                  <div className="flex items-center justify-between"><h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-neutral-900" />Resume Entity Graph</h3><span className="text-xs text-neutral-500">{graphData.resume_graph?.nodes?.length??0} nodes</span></div>
+                <div className="min-w-0 bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2"><div className="w-2.5 h-2.5 shrink-0 rounded-full bg-neutral-900" />Resume Entity Graph</h3><span className="text-xs text-neutral-500">{graphData.resume_graph?.nodes?.length??0} nodes</span></div>
                   <GraphViz nodes={graphData.resume_graph?.nodes??[]} edges={graphData.resume_graph?.edges??[]} color="#171717" />
-                  <div className="flex items-center gap-4 text-xs text-neutral-500 pt-2 border-t border-neutral-100"><span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-neutral-900 inline-block" />Skill (SK)</span><span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-neutral-800 inline-block" />Role (RL)</span><span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-neutral-400 inline-block" />Company (CO)</span></div>
                 </div>
-                <div className="bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
-                  <div className="flex items-center justify-between"><h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-neutral-900" />Job Description Entity Graph</h3><span className="text-xs text-neutral-500">{graphData.jd_graph?.nodes?.length??0} nodes</span></div>
+                <div className="min-w-0 bg-white border border-neutral-200 rounded-lg p-6 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2"><div className="w-2.5 h-2.5 shrink-0 rounded-full bg-neutral-900" />Job Description Entity Graph</h3><span className="text-xs text-neutral-500">{graphData.jd_graph?.nodes?.length??0} nodes</span></div>
                   <GraphViz nodes={graphData.jd_graph?.nodes??[]} edges={graphData.jd_graph?.edges??[]} color="#171717" />
-                  <div className="flex items-center gap-4 text-xs text-neutral-500 pt-2 border-t border-neutral-100"><span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-neutral-900 inline-block" />Skill (SK)</span><span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-neutral-800 inline-block" />Role (RL)</span><span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full border-2 border-neutral-400 inline-block" />Company (CO)</span></div>
                 </div>
               </div>
               <div className="grid lg:grid-cols-2 gap-6">{[{ title: 'Resume Nodes', nodes: graphData.resume_graph?.nodes??[], accent: 'text-neutral-900' }, { title: 'JD Nodes', nodes: graphData.jd_graph?.nodes??[], accent: 'text-neutral-900' }].map(({ title, nodes, accent }, gi) => (<div key={gi} className="bg-white border border-neutral-200 rounded-lg p-5"><h3 className="font-semibold text-sm text-neutral-900 mb-3">{title}</h3><div className="space-y-1">{nodes.map((n,i)=>(<div key={i} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0"><div className="flex items-center gap-2.5"><div className="w-6 h-6 rounded-lg bg-neutral-100 flex items-center justify-center">{n.type==='skill'?<Code className="w-3 h-3 text-neutral-500" />:n.type==='role'?<Briefcase className="w-3 h-3 text-neutral-500" />:<Globe className="w-3 h-3 text-neutral-500" />}</div><div><p className="text-sm font-medium text-neutral-800">{n.id}</p><p className="text-xs text-neutral-500 capitalize">{n.type}</p></div></div><span className={`text-sm font-bold ${accent}`}>Detected</span></div>))}</div></div>))}</div>
@@ -487,11 +559,12 @@ export default function CareerLens() {
             {!optimizedResume ? (<div className="flex flex-col items-center justify-center py-32 gap-4 text-center"><div className="w-20 h-20 rounded-lg bg-neutral-100 flex items-center justify-center"><Sparkles className="w-9 h-9 text-neutral-300" /></div><p className="font-semibold text-neutral-500 text-lg">No clean resume yet</p><p className="text-neutral-500 text-sm">Run an analysis to prepare a clean copy of your resume</p><button onClick={() => setActiveTab('input')} className="mt-2 px-6 py-2.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-700 transition-colors">Go to Analyze</button></div>) : (<>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div><h2 className="text-xl font-medium text-neutral-900">Clean Resume</h2><p className="text-neutral-500 text-sm mt-0.5">Formatting preserves content; wording changes are applied only after your review.</p></div>
-                <button onClick={downloadAsPDF} className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-semibold px-5 py-3 rounded-md transition-colors">
+                <div className="flex flex-wrap gap-3"><button onClick={() => downloadBlob(new Blob([optimizedResume], { type: 'text/plain;charset=utf-8' }), 'careerlens-resume.txt')} className="border border-neutral-200 text-sm px-4 py-3 rounded-md">Download text</button><button onClick={() => window.print()} className="border border-neutral-200 text-sm px-4 py-3 rounded-md">Print</button><button onClick={downloadAsPDF} className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-semibold px-5 py-3 rounded-md transition-colors">
                   <Download className="w-4 h-4" />Download as PDF
-                </button>
+                </button></div>
               </div>
-              <section className="border border-neutral-200 rounded-lg p-5 space-y-4"><h3 className="font-medium">Review Proposed Changes</h3><p className="text-sm text-neutral-500">Accept only the changes you want. Unchecked edits keep their original wording. Section templates reorder existing content without adding qualifications.</p><label className="text-sm flex items-center gap-3">Section order<select value={template} onChange={e => setTemplate(e.target.value)} className="border border-neutral-200 p-2 rounded-md">{optimization?.templates?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>{optimization?.proposals?.length ? optimization.proposals.map(edit => <div key={edit.id} className="border-t border-neutral-100 pt-4 space-y-2"><label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={acceptedEdits.includes(edit.id)} onChange={e => setAcceptedEdits(e.target.checked ? [...acceptedEdits, edit.id] : acceptedEdits.filter(id => id !== edit.id))} /><span>{edit.reason} · line {edit.line}</span></label><div className="grid sm:grid-cols-2 gap-3 text-sm"><div className="p-3 bg-neutral-50"><p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Original / source evidence</p>{edit.original}</div><div className="p-3 border border-neutral-200"><p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Proposed</p>{edit.proposed}</div></div></div>) : <p className="text-sm text-neutral-500">No supported wording changes found. Formatting and section ordering are still available.</p>}<button disabled={editLoading} onClick={previewEdits} className="bg-black text-white text-sm px-5 py-3 rounded-md disabled:opacity-40">{editLoading ? 'Applying...' : 'Apply selected changes & reanalyze'}</button></section>
+              <section className="border border-neutral-200 rounded-lg p-5 space-y-4"><h3 className="font-medium">Review Proposed Changes</h3><p className="text-sm text-neutral-500">Accept only the changes you want. Unchecked edits keep their original wording. Section templates reorder existing content without adding qualifications.</p><label className="text-sm flex items-center gap-3">Section order<select value={template} onChange={e => setTemplate(e.target.value)} className="border border-neutral-200 p-2 rounded-md">{optimization?.templates?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>{optimization?.proposals?.length ? optimization.proposals.map(edit => <div key={edit.id} className="border-t border-neutral-100 pt-4 space-y-2"><label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={acceptedEdits.includes(edit.id)} onChange={e => setAcceptedEdits(e.target.checked ? [...acceptedEdits, edit.id] : acceptedEdits.filter(id => id !== edit.id))} /><span>{edit.reason} · line {edit.line}</span></label><div className="grid sm:grid-cols-2 gap-3 text-sm"><div className="p-3 bg-neutral-50"><p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Original / source evidence</p>{edit.original}</div><div className="p-3 border border-neutral-200"><p className="text-xs uppercase tracking-wide text-neutral-500 mb-2">Proposed</p>{edit.proposed}</div></div></div>) : <p className="text-sm text-neutral-500">No supported wording changes found. Formatting and section ordering are still available.</p>}<button disabled={editLoading || proposalLoading} onClick={previewEdits} className="bg-black text-white text-sm px-5 py-3 rounded-md disabled:opacity-40">{editLoading ? 'Applying...' : 'Apply selected changes & reanalyze'}</button></section>
+              <section className="border border-neutral-200 rounded-lg p-5 space-y-3"><h3 className="font-medium">Local Wording Suggestions</h3><p className="text-sm text-neutral-500">Generate alternatives locally, then review both versions. Exact approved transformations preserve the factual suffix; free-form edits also require model comparison.</p><label className="text-xs text-neutral-600">Proposal model<select aria-label="Proposal model" value={rewriteEngine} onChange={e => setRewriteEngine(e.target.value)} className="block border border-neutral-200 p-2 rounded mt-1"><option value="gemma">Local Gemma 4 E4B</option><option value="t5">Experimental T5 + Gemma validation</option></select></label><button onClick={generateLocalEdits} disabled={proposalLoading || editLoading || !systemStatus?.local_ai?.available} className="bg-black text-white rounded-md px-4 py-2 text-sm disabled:opacity-40">{proposalLoading ? 'Generating and checking facts…' : 'Generate local suggestions'}</button>{proposalNote && <p role="status" className="text-sm text-neutral-600">{proposalNote}</p>}</section>
               {comparison && <p className="text-sm text-neutral-600">Measured skill coverage: {comparison.before ?? 'N/A'} → {comparison.after ?? 'N/A'}; change: {comparison.delta ?? 'N/A'} points. Wording improvements can have zero score change.</p>}
               <p className="text-sm text-neutral-500">{optimization?.note}</p>
               <div className="bg-white border border-neutral-200 rounded-lg p-6">
@@ -510,9 +583,11 @@ export default function CareerLens() {
       <footer className="border-t border-neutral-200 mt-20 bg-white">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-neutral-500 text-sm"><div className="w-5 h-5 rounded-lg bg-neutral-900 flex items-center justify-center"><Brain className="w-3 h-3 text-white" /></div>CareerLens - Resume Analysis</div>
-          <div className="flex items-center gap-5 text-xs text-neutral-500"><span>Entity Graphs</span><span>Skill Coverage</span><span>Job Wording Review</span></div>
+          <div className="flex flex-wrap justify-center items-center gap-3 text-xs text-neutral-500"><span>Entity Graphs</span><span>Skill Coverage</span><span>Job Wording Review</span></div>
+          <Link href="/review" className="text-xs underline text-neutral-600">Review training examples</Link>
         </div>
       </footer>
     </div>
+    </>
   )
 }

@@ -17,6 +17,9 @@ TEMPLATES = {
     'engineering': {'label': 'Engineering', 'order': ['summary', 'skills', 'experience', 'projects', 'education', 'certifications']},
     'data': {'label': 'Data & analytics', 'order': ['summary', 'skills', 'projects', 'experience', 'education', 'certifications']},
     'general': {'label': 'General professional', 'order': ['summary', 'experience', 'skills', 'education', 'projects', 'certifications']},
+    'healthcare': {'label': 'Healthcare', 'order': ['summary', 'certifications', 'education', 'experience', 'skills', 'projects']},
+    'education': {'label': 'Education & research', 'order': ['summary', 'education', 'experience', 'projects', 'certifications', 'skills']},
+    'finance': {'label': 'Finance & operations', 'order': ['summary', 'certifications', 'experience', 'skills', 'education', 'projects']},
 }
 
 

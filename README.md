@@ -1,202 +1,239 @@
 # CareerLens
 
-Resume/job evidence review with a minimal black-and-white interface. Baseline analysis
-works without API keys, model downloads, or saved candidate history.
+Local resume and job-description evidence review with a minimal black-and-white interface.
+The web workflow uses Gemma through Ollama without provider credentials or cloud fallback.
+Baseline analysis also works when the local model is unavailable.
 
-## Delivered web workflow
+## What works
 
-- Text and PDF analysis: 5 MB/file, 30 pages, 50,000 characters/input.
-- Canonical skill coverage, aliases, source evidence, and basic negation handling.
-  Unsupported job vocabulary returns N/A. Mentioning a skill never proves proficiency.
-- Required/preferred qualification checklist, with experience and degree uncertainty.
-- Distinct ATS/structure, technical-evidence, and recruiter-clarity rubrics with quotes.
-  Optional Groq reviewers must return quotations found in the supplied text.
-- Reviewable constrained bullet edits: original/proposed comparison, individual
-  acceptance/rejection, source-preserving section templates, and reanalysis. Zero
-  improvement is a valid result. No missing skills, numbers, or achievements are added.
-- Clean PDF export with embedded Noto Sans, wrapping, pagination, and visible errors
-  for unsupported characters. Latin accents, Greek, and Cyrillic are regression-tested.
-- Text extraction with a two-column heuristic, password handling, and optional local
-  OCR for up to five scanned pages. Review OCR/column order before accepting edits.
-- User-triggered job-description import from Arbeitnow, with source attribution,
-  HTTPS source links, a six-hour public-feed cache, and no resume sharing/applications.
-- Optional locally trained semantic GAT experiment, separate from skill coverage.
-  Actual model attention is attached to exact input text chunks, not to unrelated
-  entity-graph nodes. Missing weights/dependencies or unsupported job titles return
-  explicit unavailable results.
+- Paste text or upload a PDF; 5 MB/file, 30 pages, 50,000 characters per input.
+- Canonical skill coverage, aliases, source evidence, basic negation, and required/preferred qualifications.
+- Three evidence-linked reviewer perspectives: ATS/structure, technical evidence, and recruiter clarity.
+- Optional local Gemma contextual qualification alignment, job wording review, entity extraction, and exploratory career ideas.
+- Reviewable constrained edits plus optional local wording proposals. Local proposals undergo protected-fact checks plus either an exact approved-transformation certificate or a model comparison before being shown; neither check proves factual equivalence.
+- Accept individual proposals, reorder existing sections using six role templates, and reanalyze actual coverage. Zero improvement is valid.
+- Clean paginated local PDF download with embedded Noto Sans/Devanagari fonts, HarfBuzz shaping, and tested Unicode extraction for Latin, Greek, Cyrillic, and Hindi examples. UTF-8 text download and browser print are also available. PDF export is capped at 30 pages.
+- Password handling, a two-column reading-order heuristic, optional local scanned-page OCR, and editable extracted text before reanalysis.
+- Document parsing in a disposable process with a 45-second timeout. Linux applies CPU/address-space limits; Windows applies a 3 GB committed-memory limit, 40-second CPU limit, and one-process limit. These resource controls are not a complete hostile-document sandbox.
+- Arbeitnow and Remote OK job-description import through supported public feeds. Listings retain source attribution and original source links; candidate text is never sent to either board.
+- Optional local NER → observed entity/source graph → MiniLM → trained GAT matching, actual attention, and tested entity-removal sensitivity, separate from deterministic coverage. Weights and encoder have been reproduced on this machine; fresh checkouts must reproduce them.
+- A review workspace at `/review` with 24 fictional rewrite drafts and 60 fictional JD-label drafts. Approve/reject, edit targets/labels, and download/restore decisions. All 84 prepared drafts were individually AI-reviewed and approved at the owner’s request; they remain explicitly distinct from human review.
+- Cross-occupation semantic requirement evidence: closest exact resume quotes with negation/proficiency flags, using a local pinned encoder.
+- Career matches from actual resume skills against 3,007 sourced occupation profiles; optional current and target role confirmation; requirements to verify/develop.
+- India-first salary comparison with sourced 2025 role/industry references, monthly/LPA/lakh/crore normalization, base-versus-CTC checks, and permitted local benchmark import. See [SALARY_REFERENCES.md](SALARY_REFERENCES.md).
+- Trained experimental T5 rewriting, BERT wording analysis with sentence-removal evidence, fitted Snorkel aggregation, and an explicit-role historical GraphSAGE explorer. These are research controls, not validated hiring models.
+- Responsive desktop/mobile web screens and a standalone web manifest. A native mobile application is not delivered.
 
-Neither coverage nor similarity is a hiring probability, employer ATS reproduction,
-fairness certification, or prediction of individual potential.
+Coverage, similarity, local suggestions, and model attention are not hiring probabilities,
+employer ATS reproductions, fairness certifications, or causal explanations.
+[STAGE_STATUS.md](STAGE_STATUS.md) tracks the remaining original promises.
 
-[STAGE_STATUS.md](STAGE_STATUS.md) maps each original promise to delivered work and
-remaining gates. [DATA_SOURCES.md](DATA_SOURCES.md) records public sources, licenses,
-revisions, attribution, rejected sources, and measured experiments. The original
-implementation brief remains in [FUTURE_IMPLEMENTATION_PROMPT.md](FUTURE_IMPLEMENTATION_PROMPT.md).
+## Run locally
 
-## Setup
+Node.js 22+ and Python are required. This checkout is configured and tested with Node 22,
+Python 3.13, and an RTX 4050 laptop GPU with 6 GB VRAM and about 24 GB system RAM.
 
-Use Node.js 22+ and a separate Python environment. Optional ML/OCR package availability
-depends on Python/platform; the recorded experiment used Windows/Python 3.14.5 on CPU.
-
-```sh
+```powershell
 npm ci
 python -m venv .venv
-# Windows PowerShell: .\.venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-ocr.txt
+# Install/update Ollama, then explicitly download the local model:
+ollama pull gemma4:e4b
+# Only create .env if you do not already have one:
+Copy-Item .env.example .env
 npm run dev:all
 ```
 
-Open http://localhost:3000; backend defaults to http://127.0.0.1:8001.
-Separate commands: `npm run backend`, `npm run dev`.
-Optional local OCR: `python -m pip install -r requirements-ocr.txt`.
-Docker's default image includes baseline analysis and local OCR, not experimental ML
-dependencies/weights. Set INSTALL_OCR=false before building for a smaller baseline image.
+Open http://localhost:3000. Native frontend and backend bind to loopback.
+The npm backend/test scripts select this project's `.venv` automatically.
+No provider API key is required. Model and package downloads require internet;
+resume processing stays on this machine. Public job search uses internet separately.
 
-```sh
-docker compose up --build -d --wait
-docker compose ps
-# End-to-end proxy checks without external AI calls:
-python scripts/docker_smoke.py
-# Stop without deleting images:
-docker compose stop
-# Remove this app's containers/network when no longer needed:
-docker compose down
-```
+The default is Gemma 4 E4B. On this laptop it completed a three-perspective fictional
+review in 34.89 seconds and proposal generation/validation in 7.42 seconds. Larger
+inputs and cold loads can take longer. These measurements do not establish task quality.
+Ollama can use system RAM/CPU offload; a working run does not mean the model fits entirely
+in the 6 GB GPU memory. No API key is required.
 
-The frontend is available at http://localhost:3000 and backend at
-http://localhost:8001. Both containers run as non-root users with health checks;
-published ports bind only to loopback. Compose reads optional provider/access
-configuration from your local .env; that file is never copied into either image.
-The frontend uses Next.js standalone output. Python downloads use a persistent
-BuildKit package cache and resumable retries. Optional pre-downloaded Linux/Python
-3.11 wheels under ignored docker/wheels are used locally; an empty wheels directory
-still builds by downloading from the package index. Do not place Windows wheels there.
-
-Copy `.env.example` to `.env` when configuring optional features.
-
-| Variable | Meaning |
+| Variable | Purpose |
 | --- | --- |
-| BACKEND_URL | Next.js proxy target; default http://127.0.0.1:8001. Set before build/dev. |
-| BACKEND_PORT / BACKEND_HOST | Port/host for python main.py; default 8001 / 127.0.0.1. Uvicorn CLI uses its own flags. |
-| GROQ_API_KEY / GROQ_MODEL | Server-only optional reviewer credentials/model. Default model: openai/gpt-oss-20b. |
-| GAT_MODEL_DIR | Local experiment manifest/checkpoint directory. Default ml/models/gat_experimental. |
-| CORS_ORIGINS | Allowed direct browser origins; not authentication. |
-| API_AUTH_TOKEN | Optional private-deployment bearer token, at least 32 characters. Enter in the UI access field; never stored in browser storage. |
+| OLLAMA_BASE_URL | Native default http://127.0.0.1:11434; Compose sets http://ollama:11434. Only loopback, Docker Desktop's host gateway, and this exact Compose service address are accepted. |
+| OLLAMA_MODEL | Downloaded local model tag, default gemma4:e4b. Cloud-backed tags/aliases are rejected. |
+| OLLAMA_CONTEXT | Local context window, 8192 by default, bounded to 8192–16384. |
+| OLLAMA_TIMEOUT | Per-generation timeout in seconds, default 300, bounded to 15–300. |
+| REVIEW_SIGNING_KEY | Optional shared 32+ character signing secret for multiple backend workers. Otherwise proposals expire on process restart. |
+| BACKEND_URL | Next.js proxy target, default http://127.0.0.1:8001. Set before build/dev. |
+| BACKEND_PORT | Backend port, default 8001. |
+| GAT_MODEL_DIR | Evaluated local semantic artifact directory, default ml/models/gat_entities. |
+| API_AUTH_TOKEN | Optional private access token, 32+ characters, entered in the UI and kept in page memory. |
+| CORS_ORIGINS | Allowed direct browser origins; does not replace authentication. |
 
-No API key is required for baseline analysis. Selecting external AI explicitly sends
-resume and JD text to Groq; provider retention is governed by its policies. Local
-semantic inference and OCR do not upload input or download models during requests.
+Local generation accepts at most 14 KB of serialized prompt data; longer documents
+still receive baseline analysis. The transport never silently slices the resume.
+Only one generation runs per backend worker. Rewrite generation may use two calls.
+Exact approved action-phrase rewrites keep the remaining source characters unchanged.
+Free-form edits require model comparison as well as protected-fact checks.
+Proposal generation considers up to 20 existing bullets and returns at most six edits.
 
-## API and safety
+## Run everything with Docker
 
-- GET /health: baseline, OCR, semantic-artifact and research-model status. Configuration
-  does not prove provider reachability or model suitability.
-- POST /api/analyze: JSON resume, jobDescription; optional useAI and useSemantic.
-- POST /api/analyze-pdf: multipart file, jobDescription; optional useAI, useSemantic,
-  useOCR, pdfPassword. Passwords are used in memory, not forwarded to providers.
-- POST /api/optimize-preview: original resume, jobDescription, acceptedEdits (server-issued
-  proposal IDs), template. Rejects stale/unknown/duplicate IDs. Only accepted changes apply.
-- GET /api/jobs?query=...&limit=10: source-attributed public listings.
-- Graphs come from detailed_results.graph_analysis in the same response. The old
-  shared /api/graph-data/{id} endpoint returns 410.
+With Docker Desktop running in WSL2 mode and NVIDIA GPU support available, run:
 
-The compatibility analysis.atsScore field means recognized-skill coverage and may
-be null. Learned similarity remains at detailed_results.semantic_matching.
-Rewrite comparison measures coverage before/after; it does not invent a writing-quality score.
-
-API bodies are capped at 6 MB before multipart/JSON parsing. Four API requests per
-worker may run concurrently, excess returns 429; uploads time out after 30 seconds.
-Provider review has a 20-second timeout and no automatic retries. These limits are
-not a distributed rate limiter or a hard sandbox for hostile PDF processing.
-
-Candidate content is not intentionally saved or logged. Framework PDF upload files
-may be temporarily spooled and are closed after handling; browser results remain in
-page memory until refreshed. Downloaded resumes are user-controlled files. Public
-training datasets/checkpoints and public job-feed caches are separate from candidate history.
-
-For nonlocal deployment: require HTTPS, authentication, edge rate limits, worker
-CPU/memory/time limits, private backend networking, and log/body-redaction policies.
-The shared bearer option is for private access, not a multi-user identity system.
-Docker ports bind to loopback by default. Do not expose an unauthenticated backend.
-No deployment or publication happens automatically.
-
-## Reproduce the learned experiments
-
-Install an appropriate torch wheel and `requirements-ml.txt` in a separate environment.
-Exact tested package versions and checkpoint SHA256s are recorded in the manifests.
-Weights and datasets are ignored by Git; the tracked manifest alone never enables inference.
-
-```sh
-python -m data.acquire_public
-python -m training.train_semantic --epochs 12 --jobs 300 --resumes 3000
-python -m training.train_semantic --evaluate-only --epochs 12 --jobs 300 --resumes 3000
-
-python -m data.acquire_jobhop
-python -m training.train_career --people 10000 --epochs 60
+```powershell
+docker compose up -d
 ```
 
-Acquisition is explicit, revision-pinned, bounded, and preserves source cards and
-checksums. Semantic evaluation holds out both resumes and jobs; career evaluation
-holds out people and uses training-only role features/edges. Neither experiment
-validates hiring outcomes. Career ranking trails the frequency baseline, and source
-fairness/cross-market checks are missing, so career suggestions remain disabled.
+Open http://localhost:3000. Compose starts Ollama, prepares `gemma4:e4b`, and then
+starts the backend and frontend. No separate Windows Ollama application or native
+`npm run dev:all` process is needed for this setup. The first launch builds missing
+app images and downloads the model if absent; allow several minutes and internet
+access for that initial setup. Later launches reuse the saved model without pulling
+it again. The selected model is controlled by `OLLAMA_MODEL` in `.env`.
 
-The semantic encoder uses observed text chunks (at most 32, excluding contact lines
-containing @), MiniLM embeddings, and adjacency edges. It is **not** the completed
-learned NER/entity-relation pipeline promised in the roadmap. Inference is limited to
-explicit job-title families in the manifest; new occupations need reviewed validation.
+The image is pinned to Ollama 0.21.1, whose
+[release notes](https://github.com/ollama/ollama/releases/tag/v0.21.1) include the
+Gemma 4 structured-output fix for `think=false`. Older native Ollama versions can
+ignore the requested JSON schema and cause AI review to fall back to baseline.
 
-## Reviewed-data training gates
+Ollama uses the NVIDIA GPU with CPU/system-memory offload when necessary. Its model
+files live in the `ollama_data` named volume. `docker compose down` preserves that
+volume; `docker compose down -v` deletes it and requires another model download.
+The Ollama API is available only inside the Compose network, and cloud features
+are disabled. The app remains at localhost ports 3000 and 8001. Services restart
+with Docker Desktop unless explicitly stopped.
 
-No suitable reviewed rewriting/bias corpus was accepted during sourcing, so T5 and
-BERT capabilities remain unavailable. The prepared training commands are not claims
-of trained models or verified quality:
-
-```sh
-python -m training.train_rewriter --data reviewed_rewrites.csv --provenance rewrite_source.json
-python -m training.train_bias --data reviewed_jds.csv --provenance jd_source.json
-python -m data.label_aggregation --votes licensed_votes.csv --provenance votes_source.json
+```powershell
+docker compose ps --all
+docker compose logs -f ollama-init
+docker compose exec ollama ollama list
+docker compose exec ollama ollama ps
+# Exercise the app and local Gemma with fictional inputs:
+.\.venv\Scripts\python.exe scripts/docker_smoke.py --with-ai
 ```
 
-Review manifests require source_url, license, task, reviewer, reviewed=true,
-label_method, and data_sha256 matching the CSV. Reviewer fields are documented
-attestations, not independently verified identities.
+`ollama-init` exiting with code 0 is expected: it checks/prepares the model and
+finishes. The three long-running services are `ollama`, `backend`, and `frontend`.
+Docker's baseline backend image does not include the optional research dependencies,
+checkpoints, or career encoder/catalog; their controls report unavailable until
+those assets are installed/mounted. Native startup remains available for the full
+locally installed research environment.
 
-T5 CSV: source_id (original resume ID), original, improved, jd_context. At least ten
-source resumes; split by source and reject duplicate original bullets across splits.
-Fine-tuning selects validation loss and separately evaluates test loss and numeric,
-skill, and negation invariants. Those invariants do not prove semantic fidelity or
-writing quality, so generated outputs remain research-only and never auto-apply.
+## API
 
-BERT CSV: source_id, text, plus reviewed binary label columns named in manifest.labels.
-Only supported classes are trained; unsupported categories remain unavailable.
-At least 50 source documents, disjoint holdouts, validation thresholds, per-label
-AUC/F1/precision/recall/Brier. Phrase attribution and context/fairness evaluation
-still gate deployment. No overall quality/fairness score is fabricated.
+- `GET /health`: actual baseline/OCR/local-model/semantic/research capability states.
+- `POST /api/analyze`: resume, jobDescription, optional useAI (local Gemma), useSemantic (GAT experiment), useResearch (BERT/Snorkel experiments), useEvidence (semantic passage retrieval). The UI enables passage retrieval by default.
+- `POST /api/analyze-pdf`: multipart file, jobDescription, useAI, useSemantic, useResearch, useEvidence, useOCR, pdfPassword.
+- `POST /api/export-pdf`: resume text; returns a clean embedded-font, shaped PDF. Unsupported characters/scripts fail visibly.
+- `POST /api/rewrite-proposals`: resume, jobDescription, and optional engine (gemma or t5); returns reviewable edits and an expiring signed proposalToken.
+- `POST /api/optimize-preview`: source resume/jobDescription, acceptedEdits, template, optional proposalToken. Checks signature, expiry, source/job binding, duplicate/conflicting/stale IDs, and factual invariants.
+- `GET /api/jobs?source=arbeitnow|remoteok&query=...&limit=10`: attributed public listings.
+- `GET /api/career-roles?query=...` and `/api/career-explore?code=...`: local ESCO role lookup and historical research ranking, requiring an explicit role selection.
+- `POST /api/career-recommendations`: resume, optional currentRoleCode and up to three targetRoleCodes; returns sourced skill evidence/development needs.
+- `GET /api/salary-references` and `POST /api/salary-compare`: India reference lookup and explicit offer/reference comparison.
+- `/api/graph-data/{id}` returns 410; use the graph in the same analysis response.
 
-Snorkel CSV: source_id,text,lf_* votes (-1 abstain/0/1), at least three documented
-labeling functions. Provenance names source/license/task, label_definitions, data_sha256.
-It fits a real LabelModel and leaves all-abstain rows unlabeled; weak posteriors need
-independent human evaluation. Teacher-generation utilities remain opt-in research,
-require licensed inputs and human review, and are not run by the web app.
+`analysis.atsScore` means recognized-skill coverage and can be null. GAT results remain
+under `detailed_results.semantic_matching`; local foundation-model review remains under
+`detailed_results.local_review`. Evidence-linked Gemma career ideas are separate from the historical GraphSAGE experiment.
+Coverage sensitivity, learned entity removal, and attention are labeled separately.
+Synthetic-label isotonic calibration is fitted on validation only and evaluated on test;
+it does not estimate real hiring probability.
+Accepted-edit reanalysis runs the deterministic baseline again; local review is not rerun automatically.
+
+## Review the prepared examples
+
+Open http://localhost:3000/review. The examples are AI-authored fictional practice data,
+with no real candidates, vacancies, or hiring outcomes. The prepared records start with
+explicit AI approvals; edits reset decisions, and your approval records a human attestation.
+Download decisions before leaving the page; Restore progress accepts that downloaded file.
+
+After reviewing a task, import the downloaded decisions:
+
+```powershell
+.\.venv\Scripts\python.exe -m data.review_queue import-decisions --bundle "C:\path\careerlens-review-decisions.json" --output Datasets/reviewed/session-1
+```
+
+A task exports a reviewed CSV and checksum-bound provenance only after every example
+has an explicit approve/reject decision and named reviewer attestation. Names are not
+independently verified identities. Human approval of this small templated synthetic set
+can exercise training; it does not establish real-world quality or deployment readiness.
+
+For separately licensed/consented source data, use `python -m data.review_queue seed
+--help`. Optional `--local-drafts` runs Gemma teacher generation; drafts remain unreviewed.
+No web upload enters a training queue automatically.
+
+## Reproduce research models
+
+Install a matching PyTorch wheel, then `requirements-ml.txt` (includes pinned English
+spaCy NER). This machine uses CPU PyTorch so training does not compete with Ollama for
+GPU memory. The trained files are installed locally and ignored by Git; final manifests
+record their checksums, sources, splits and evaluation. Fresh checkouts must reproduce them.
+
+```powershell
+.\.venv\Scripts\python.exe -m data.acquire_public
+.\.venv\Scripts\python.exe -m training.train_semantic --epochs 12 --jobs 300 --resumes 3000 --graph-mode entity-v1 --output ml/models/gat_entities
+.\.venv\Scripts\python.exe -m data.acquire_jobhop
+.\.venv\Scripts\python.exe -m data.acquire_esco
+.\.venv\Scripts\python.exe -m data.acquire_career_profiles
+.\.venv\Scripts\python.exe -m training.build_career_index
+.\.venv\Scripts\python.exe -m training.train_career --people 10000 --epochs 60
+# Explicit AI-reviewed synthetic experiment; no human-review claim:
+.\.venv\Scripts\python.exe -m training.train_rewriter --data data/review_examples/ai-approved/rewrites-reviewed.csv --provenance data/review_examples/ai-approved/rewrites-reviewed.provenance.json --allow-ai-reviewed-synthetic --epochs 15
+.\.venv\Scripts\python.exe -m training.train_bias --data data/review_examples/ai-approved/jobs-reviewed.csv --provenance data/review_examples/ai-approved/jobs-reviewed.provenance.json --allow-ai-reviewed-synthetic
+.\.venv\Scripts\python.exe -m training.train_weak_wording
+```
+
+For independently human-reviewed data, omit `--allow-ai-reviewed-synthetic` and supply
+its reviewed CSV and matching provenance. The default training gate still requires a
+human-review attestation. AI-reviewed data can never set `reviewed=true`.
+
+GAT uses licensed synthetic relevance labels. T5/BERT use AI-reviewed fictional data,
+with repeated templates across source splits. The historical GraphSAGE ranking trails its frequency
+baseline and does not use skills. The operational career matcher instead uses local
+semantic retrieval and explicit skill evidence from the public occupation taxonomy. Research models remain `deployment_ready=false`;
+explicit experimental inference does not change that status. Real-world calibration,
+human factual/writing review, occupation/language robustness, and career fairness require
+independent evidence. See [DATA_SOURCES.md](DATA_SOURCES.md) and [STAGE_STATUS.md](STAGE_STATUS.md).
+
+## Privacy and deployment
+
+Candidate content is not intentionally saved or logged by this app. Framework uploads
+may spool temporarily and are closed after processing. Parser-worker pipes contain text
+and passwords in memory. Browser results last until refresh; downloads are user-controlled.
+Local Ollama may retain model context in RAM while loaded (keep-alive five minutes);
+review Ollama's own logging/configuration for your deployment. Public feed caches and
+fictional/reviewed training datasets and the downloaded ESCO occupation catalog are separate from candidate history.
+
+API bodies are bounded to 6 MB before parsing, with four requests per worker and a
+30-second upload deadline. Local model generation is serialized per worker. Provider
+errors fall back to visible baseline results without cloud requests. These are local
+controls, not distributed rate limiting or a complete hostile-document sandbox.
+
+For a public service, HTTPS, per-user identity/access control, distributed limits,
+private networking, log policies, and worker isolation still need deployment work.
+Docker Compose manages the frontend, backend, and local Ollama service together;
+see the Docker startup section above. Native `npm run dev:all` remains available
+with an independently running local Ollama server.
+The mobile application scope is documented in [MOBILE_SCOPE.md](MOBILE_SCOPE.md).
 
 ## Verification
 
-```sh
+```powershell
 npm test
 npm run lint
 npx tsc --noEmit
 npm run test:pdf
 npm run build
-npm audit
-docker compose config --quiet
+.\.venv\Scripts\python.exe -m pip check
+# Explicit live test with fictional inputs only:
+.\.venv\Scripts\python.exe scripts/local_smoke.py
+.\.venv\Scripts\python.exe -m training.evaluate_operational
 ```
 
-No live AI-provider requests are made by tests. ML/OCR tests skip when dependencies
-are absent. PDF export is verified by full text extraction and rendered-page review;
-test artifacts live under ignored tmp/pdfs. Browser interaction must also be manually
-checked when browser access is available.
-
-Noto Sans is bundled under SIL OFL; see public/fonts/OFL.txt. Scripts such as Devanagari
-and emoji are not silently approximated: additional fonts/shaping tests are still needed.
+Regression tests mock local generation and make no cloud AI calls. The explicit smoke
+script calls local Ollama. Optional research/OCR checks run when their dependencies exist.
+Both bundled fonts use SIL OFL; licenses are under `public/fonts/`. The current PDF download is generated locally with ReportLab/HarfBuzz. The legacy
+jsPDF helper remains regression-tested but is no longer used by the download button.
+Unsupported glyphs and right-to-left scripts are explicitly rejected. Other scripts,
+complex layouts, and OCR accuracy need broader benchmarks.

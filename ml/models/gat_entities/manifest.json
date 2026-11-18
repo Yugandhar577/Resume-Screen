@@ -1,0 +1,265 @@
+{
+  "version": "gat-semantic-synthetic-entity-v1-v1",
+  "graph_mode": "entity-v1",
+  "ner": {
+    "package": "en_core_web_sm",
+    "version": "3.8.0",
+    "license": "MIT",
+    "type": "Pretrained general English NER plus canonical career vocabulary; not career-fine-tuned"
+  },
+  "training_completed": true,
+  "experimental": true,
+  "environment": {
+    "python": "3.13.6",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "CPU",
+    "torch": "2.14.1+cpu",
+    "torch-geometric": "2.8.1",
+    "transformers": "5.19.0",
+    "sentence-transformers": "5.7.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "pyarrow": "24.0.0",
+    "scikit-learn": "1.9.1"
+  },
+  "checkpoint_sha256": "a0c4f454dec51e3098fd4e757c3b2403e7953bfd27b19b28173d4b6279b76a53",
+  "model_config": {
+    "input_dim": 384,
+    "hidden_dim": 32,
+    "output_dim": 32,
+    "num_heads": 2,
+    "num_layers": 2,
+    "dropout": 0.1
+  },
+  "encoder_path": "Datasets\\models\\minilm",
+  "encoder": {
+    "source": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "license": "Apache-2.0"
+  },
+  "dataset": {
+    "source": "https://huggingface.co/datasets/michaelozon/candidate-matching-synthetic",
+    "revision": "178ab864dcad9910c5670d43e4bdbbb901a11f18",
+    "license": "MIT (declared by dataset author)",
+    "author": "Michael Ozon",
+    "labels": "Synthetic skills/rule-generated relevance, not human hiring decisions",
+    "usage": "Experimental training/evaluation only; do not claim real hiring validity.",
+    "files": [
+      {
+        "file": "resumes-train-00000-of-00001.parquet",
+        "url": "https://huggingface.co/datasets/michaelozon/candidate-matching-synthetic/resolve/178ab864dcad9910c5670d43e4bdbbb901a11f18/resumes/train-00000-of-00001.parquet",
+        "sha256": "4a25add9c3a620c4c396e867063e390fc8084f9b53ed8135def049303a29d7a4",
+        "bytes": 277342
+      },
+      {
+        "file": "jobs-train-00000-of-00001.parquet",
+        "url": "https://huggingface.co/datasets/michaelozon/candidate-matching-synthetic/resolve/178ab864dcad9910c5670d43e4bdbbb901a11f18/jobs/train-00000-of-00001.parquet",
+        "sha256": "c13d7c7e0ab510e81117974027de1364f973a27b3cacc8fabfbd8851c352c871",
+        "bytes": 56026
+      },
+      {
+        "file": "matches-train-00000-of-00001.parquet",
+        "url": "https://huggingface.co/datasets/michaelozon/candidate-matching-synthetic/resolve/178ab864dcad9910c5670d43e4bdbbb901a11f18/matches/train-00000-of-00001.parquet",
+        "sha256": "dab24e40948b2da348c6df7072b5b5fe3bb6ef8cab335f88eef5d5667ee79a92",
+        "bytes": 274261
+      },
+      {
+        "file": "README.md",
+        "url": "https://huggingface.co/datasets/michaelozon/candidate-matching-synthetic/resolve/178ab864dcad9910c5670d43e4bdbbb901a11f18/README.md",
+        "sha256": "7a8c23a8a8721e2f977431a4d05e20dbe8a52d19f4f9fd33aceac5334ec7b4cc",
+        "bytes": 13204
+      }
+    ]
+  },
+  "evaluation": {
+    "val": {
+      "pairs": 489,
+      "jobs": 60,
+      "threshold": -0.07999999999999996,
+      "accuracy": 0.8752556237218814,
+      "f1": 0.7607843137254902,
+      "auc": 0.9286140979689367,
+      "recall_at_5": 0.8475,
+      "mrr": 0.7916666666666666,
+      "brier_diagnostic": 0.12924572309878232,
+      "calibrated": false,
+      "ranking_candidate_pool": "sampled disjoint subset; not the full labor market"
+    },
+    "test": {
+      "pairs": 438,
+      "jobs": 60,
+      "threshold": -0.07999999999999996,
+      "accuracy": 0.863013698630137,
+      "f1": 0.7368421052631579,
+      "auc": 0.9297093837535013,
+      "recall_at_5": 0.8077777777777777,
+      "mrr": 0.711111111111111,
+      "brier_diagnostic": 0.12660181457470843,
+      "calibrated": false,
+      "ranking_candidate_pool": "sampled disjoint subset; not the full labor market"
+    },
+    "baseline_val": {
+      "pairs": 489,
+      "jobs": 60,
+      "threshold": 0.26,
+      "accuracy": 0.6114519427402862,
+      "f1": 0.391025641025641,
+      "auc": 0.5666643690837239,
+      "recall_at_5": 0.5850000000000001,
+      "mrr": 0.5334722222222222,
+      "brier_diagnostic": 0.3844989775051124,
+      "calibrated": false,
+      "ranking_candidate_pool": "sampled disjoint subset; not the full labor market"
+    },
+    "baseline_test": {
+      "pairs": 438,
+      "jobs": 60,
+      "threshold": 0.26,
+      "accuracy": 0.7534246575342466,
+      "f1": 0.49056603773584906,
+      "auc": 0.6642740429505135,
+      "recall_at_5": 0.7038888888888888,
+      "mrr": 0.5867063492063492,
+      "brier_diagnostic": 0.22020991882293253,
+      "calibrated": false,
+      "ranking_candidate_pool": "sampled disjoint subset; not the full labor market"
+    }
+  },
+  "calibration": {
+    "method": "Validation-only isotonic regression",
+    "x": [
+      -0.8491206765174866,
+      -0.3258049190044403,
+      -0.3254740536212921,
+      -0.25536638498306274,
+      -0.25202202796936035,
+      -0.23304161429405212,
+      -0.2312445044517517,
+      -0.09846161305904388,
+      -0.09614148736000061,
+      -0.03528355807065964,
+      -0.03392408415675163,
+      0.12154605984687805,
+      0.12203601747751236,
+      0.1920766532421112,
+      0.1955166757106781,
+      0.2530621588230133,
+      0.25477299094200134,
+      0.3046538829803467
+    ],
+    "y": [
+      0.0,
+      0.0,
+      0.08333333333333333,
+      0.08333333333333333,
+      0.09090909090909091,
+      0.09090909090909091,
+      0.37209302325581395,
+      0.37209302325581395,
+      0.5,
+      0.5,
+      0.6851851851851852,
+      0.6851851851851852,
+      0.6923076923076923,
+      0.6923076923076923,
+      0.7142857142857143,
+      0.7142857142857143,
+      1.0,
+      1.0
+    ],
+    "test_brier": 0.08920884846669072,
+    "test_reliability_bins": [
+      {
+        "count": 288,
+        "mean_estimate": 0.008241585769533603,
+        "observed_synthetic_rate": 0.024305555555555556
+      },
+      {
+        "count": 1,
+        "mean_estimate": 0.12913408361919956,
+        "observed_synthetic_rate": 0.0
+      },
+      {
+        "count": 20,
+        "mean_estimate": 0.3720930232558139,
+        "observed_synthetic_rate": 0.4
+      },
+      {
+        "count": 1,
+        "mean_estimate": 0.4926505303919573,
+        "observed_synthetic_rate": 1.0
+      },
+      {
+        "count": 17,
+        "mean_estimate": 0.5,
+        "observed_synthetic_rate": 0.5882352941176471
+      },
+      {
+        "count": 84,
+        "mean_estimate": 0.6873072827920412,
+        "observed_synthetic_rate": 0.6666666666666666
+      },
+      {
+        "count": 16,
+        "mean_estimate": 0.7132293614743713,
+        "observed_synthetic_rate": 0.625
+      },
+      {
+        "count": 11,
+        "mean_estimate": 0.9891517742613446,
+        "observed_synthetic_rate": 0.9090909090909091
+      }
+    ],
+    "test_ece": 0.02590684347370202,
+    "note": "Calibration targets synthetic relevance labels and the sampled benchmark prevalence only. It is not a real-world relevance or hiring probability."
+  },
+  "seed": 42,
+  "epochs": 12,
+  "supported_role_families": [
+    "Account Executive",
+    "Associate Product Manager",
+    "BI Analyst",
+    "Backend Engineer",
+    "Business Analyst",
+    "Business Development Manager",
+    "Content Marketer",
+    "Customer Success Associate",
+    "Customer Support Specialist",
+    "Data Analyst",
+    "FP&A Analyst",
+    "Financial Analyst",
+    "Full Stack Engineer",
+    "Junior Accountant",
+    "Marketing Manager",
+    "Operations Manager",
+    "Performance Marketer",
+    "Product Manager",
+    "Program Coordinator",
+    "Project Manager",
+    "Sales Representative",
+    "Software Engineer",
+    "Technical Product Manager",
+    "Technical Support Specialist"
+  ],
+  "classification_threshold": -0.07999999999999996,
+  "threshold_source": "Validation F1 only",
+  "subset": {
+    "jobs": 300,
+    "resumes": 3000
+  },
+  "ranking_ties": "Label-independent SHA256 ordering of query and candidate IDs",
+  "split": {
+    "method": "Both resume IDs and job IDs disjoint",
+    "counts": {
+      "train": 3824,
+      "val": 489,
+      "test": 438
+    }
+  },
+  "limitations": [
+    "Synthetic rule-generated relevance only",
+    "No evidence of real hiring validity",
+    "Not calibrated",
+    "Small sampled ranking pools"
+  ]
+}

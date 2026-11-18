@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "AI-Powered Resume Transformation & Hiring Simulation Platform",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 127.0.0.1",
     "lint": "eslint app lib tests *.js *.mjs",
-    "backend": "uvicorn main:app --port 8001",
+    "backend": "python scripts/python_env.py backend",
     "dev:all": "concurrently --kill-others-on-fail \"npm run backend\" \"npm run dev\"",
-    "test": "python -m unittest discover -s tests -v",
+    "test": "python scripts/python_env.py test",
     "test:pdf": "node tests/resume-pdf.test.mjs"
   },
   "dependencies": {

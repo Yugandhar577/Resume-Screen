@@ -13,6 +13,7 @@ Datasets
 *.pt
 *.pth
 *.safetensors
+ml/models/
 tmp
 output
 Project_Documentation

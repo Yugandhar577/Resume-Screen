@@ -72,6 +72,7 @@ class CareerLensEngine:
                 "graph_analysis": {"resume_graph": resume_graph, "jd_graph": jd_graph},
                 "skill_evidence": skill_evidence(resume_text),
                 "requirements": checks, "reviewers": reviewers,
+                "score_explanation": self._explain_score(matching),
             },
             "method": "Rule_Based", "review_method": "Rule_Based",
             "warnings": ["This is recognized-skill coverage, not an ATS acceptance probability or a trained GAT score."],
@@ -79,6 +80,17 @@ class CareerLensEngine:
 
     def _extract_skills(self, text: str) -> List[str]:
         return extract_skills(text)
+
+    def _explain_score(self, matching):
+        """Exact perturbation of the active coverage formula, not model attention."""
+        total = matching['job_skill_count']
+        score = matching['match_score']
+        items = []
+        for skill in matching['skill_overlap']:
+            without = round(100*(len(matching['skill_overlap'])-1)/total)
+            items.append({'skill': skill, 'score_without_skill': without, 'point_change': score-without})
+        return {'method': 'Remove one canonical matched skill from the coverage calculation', 'items': items,
+                'note': 'Exact sensitivity of recognized-skill coverage. Contributions may not sum due to rounding. This does not explain a learned model or hiring decisions.'}
 
     def _extract_roles(self, text: str) -> List[str]:
         roles = ["Software Engineer", "Data Scientist", "Data Analyst", "Product Manager",

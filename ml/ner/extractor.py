@@ -1,6 +1,6 @@
 """
 Module 1: NER-based Knowledge Graph Builder
-Fine-tuned SpaCy NER for extracting career entities from resumes and job descriptions.
+Legacy optional spaCy/pattern extractor. The active versioned learned graph uses ml/entity_graph.py.
 """
 
 try:
@@ -15,7 +15,7 @@ from ml.skills import SKILL_ALIASES, _pattern
 
 class CareerNERExtractor:
     """
-    Fine-tuned SpaCy NER model for extracting career-specific entities.
+    Optional custom model or pretrained general NER, supplemented with career patterns.
     Custom entity types: SKILL, ROLE, TOOL, YEAR_EXP, EDUCATION
     Falls back to regex-only mode if spacy is not installed.
     """

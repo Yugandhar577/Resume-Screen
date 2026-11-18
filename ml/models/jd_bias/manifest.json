@@ -1,0 +1,129 @@
+{
+  "version": "bert-reviewed-jd-v1",
+  "task": "job_bias",
+  "training_completed": true,
+  "deployment_ready": false,
+  "deployment_reason": "Phrase attribution and deployment-context evaluation are not yet validated.",
+  "checkpoint": "model.safetensors",
+  "checkpoint_sha256": "d65175b016f226088f98f0761d8e6a74423a45892dfe8dcc1cc8acd3d15e5491",
+  "base_model": "google-bert/bert-base-uncased",
+  "base_commit": null,
+  "supported_labels": [
+    "Vague",
+    "Biased",
+    "Experience_Inflated"
+  ],
+  "source": {
+    "source_url": "urn:careerlens:project-authored-fictional-review-examples:v1",
+    "license": "Project-authored synthetic examples, provided for use and modification in this project.",
+    "synthetic": true,
+    "reviewed": false,
+    "limitations": [
+      "AI-authored fictional practice data; no real candidates, jobs, or hiring outcomes.",
+      "Human approval of these examples does not establish real-world model quality.",
+      "Similar templates may leak phrasing across source splits; these are pipeline exercises only."
+    ],
+    "review_type": "ai",
+    "ai_reviewed": true,
+    "review_limitations": "AI approvals authorized by project owner; no human-reviewed attestation. Small templated fictional data supports pipeline testing only.",
+    "task": "job_bias",
+    "labels": [
+      "Vague",
+      "Biased",
+      "Experience_Inflated"
+    ],
+    "label_definitions": {
+      "Vague": "Contains unclear, non-measurable role expectations that need contextual clarification.",
+      "Biased": "Contains an explicit potentially exclusionary age, gender, or language restriction requiring contextual review.",
+      "Experience_Inflated": "Contains an experience expectation that conflicts with the stated entry level or stated technology timeline."
+    },
+    "reviewer": "Codex AI review",
+    "label_method": "Explicit AI review of fictional targets/labels",
+    "data_sha256": "7fae5b05d4dd8f512809fe6499308f83328a2bba27ed5c0196c9d10a6aeb93d5",
+    "review_queue_sha256": "8119e16489023a10fcd06d10b2ff8ba841ebe083f47071a818bfaf4733481871",
+    "review_attestation": "Reviewer names are supplied attestations, not independently verified identities."
+  },
+  "environment": {
+    "python": "3.13.6",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "CPU",
+    "torch": "2.14.1+cpu",
+    "torch-geometric": "2.8.1",
+    "transformers": "5.19.0",
+    "sentence-transformers": "5.7.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "pyarrow": "24.0.0",
+    "scikit-learn": "1.9.1"
+  },
+  "evaluation": {
+    "val": {
+      "rows": 12,
+      "labels": {
+        "Vague": {
+          "auc": 1.0,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "brier": 0.14880390465259552,
+          "validation_threshold": 0.56
+        },
+        "Biased": {
+          "auc": 0.8518518518518519,
+          "f1": 0.6,
+          "precision": 0.42857142857142855,
+          "recall": 1.0,
+          "brier": 0.23736484348773956,
+          "validation_threshold": 0.48
+        },
+        "Experience_Inflated": {
+          "auc": 1.0,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "brier": 0.1678950935602188,
+          "validation_threshold": 0.25
+        }
+      },
+      "calibrated": false
+    },
+    "test": {
+      "rows": 12,
+      "labels": {
+        "Vague": {
+          "auc": 1.0,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "brier": 0.14155277609825134,
+          "validation_threshold": 0.56
+        },
+        "Biased": {
+          "auc": 0.7142857142857142,
+          "f1": 0.7692307692307693,
+          "precision": 0.625,
+          "recall": 1.0,
+          "brier": 0.228837788105011,
+          "validation_threshold": 0.48
+        },
+        "Experience_Inflated": {
+          "auc": 1.0,
+          "f1": 0.9230769230769231,
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "brier": 0.1679711937904358,
+          "validation_threshold": 0.25
+        }
+      },
+      "calibrated": false
+    }
+  },
+  "split": "Source-document-disjoint 60/20/20; exact duplicate texts removed",
+  "limitations": [
+    "Raw activations are not calibrated fairness probabilities.",
+    "No overall quality score.",
+    "Unsupported categories are unavailable, not negative.",
+    "No candidate traits or hiring outcomes are inferred."
+  ],
+  "base_revision": "86b5e0934494bd15c9632b12f734a8a67f723594"
+}

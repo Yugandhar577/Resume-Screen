@@ -4,6 +4,7 @@ jspdf/
 
 # Next.js build output
 .next/
+.playwright-mcp/
 tmp/
 *.tsbuildinfo
 out/
@@ -43,3 +44,15 @@ docker/wheels/*.whl
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Training intermediates (final manifests remain versioned)
+ml/models/**/checkpoint-*/
+ml/models/**/runs/
+
+# Reproducible research artifacts: version final manifests, regenerate weights/tokenizers.
+ml/models/t5_rewriter/*
+!ml/models/t5_rewriter/manifest.json
+ml/models/jd_bias/*
+!ml/models/jd_bias/manifest.json
+ml/models/weak_labels/*
+!ml/models/weak_labels/manifest.json

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: { proxyTimeout: 650000 },
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   async rewrites() {
     const backendUrl = (process.env.BACKEND_URL || 'http://127.0.0.1:8001').replace(/\/$/, '')

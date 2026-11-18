@@ -2,6 +2,19 @@
   "version": "gat-semantic-synthetic-v1",
   "training_completed": true,
   "experimental": true,
+  "environment": {
+    "python": "3.13.6",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "CPU",
+    "torch": "2.14.1+cpu",
+    "torch-geometric": "2.8.1",
+    "transformers": "5.19.0",
+    "sentence-transformers": "5.7.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "pyarrow": "24.0.0",
+    "scikit-learn": "1.9.1"
+  },
   "checkpoint_sha256": "5adc54804ad267b3d13496e51d6b41f30c68b07a36484739245f4a5ce308e8b6",
   "model_config": {
     "input_dim": 384,
@@ -107,40 +120,6 @@
   },
   "seed": 42,
   "epochs": 12,
-  "classification_threshold": -0.040000000000000036,
-  "threshold_source": "Validation F1 only",
-  "subset": {
-    "jobs": 300,
-    "resumes": 3000
-  },
-  "ranking_ties": "Label-independent SHA256 ordering of query and candidate IDs",
-  "split": {
-    "method": "Both resume IDs and job IDs disjoint",
-    "counts": {
-      "train": 3824,
-      "val": 489,
-      "test": 438
-    }
-  },
-  "limitations": [
-    "Synthetic rule-generated relevance only",
-    "No evidence of real hiring validity",
-    "Not calibrated",
-    "Small sampled ranking pools"
-  ],
-  "environment": {
-    "python": "3.14.5",
-    "platform": "Windows-11-10.0.26200-SP0",
-    "device": "CPU",
-    "torch": "2.12.0",
-    "torch-geometric": "2.8.1",
-    "transformers": "5.9.0",
-    "sentence-transformers": "5.5.1",
-    "numpy": "2.4.6",
-    "pandas": "2.3.3",
-    "pyarrow": "24.0.0",
-    "scikit-learn": "1.9.0"
-  },
   "supported_role_families": [
     "Account Executive",
     "Associate Product Manager",
@@ -166,5 +145,26 @@
     "Software Engineer",
     "Technical Product Manager",
     "Technical Support Specialist"
+  ],
+  "classification_threshold": -0.040000000000000036,
+  "threshold_source": "Validation F1 only",
+  "subset": {
+    "jobs": 300,
+    "resumes": 3000
+  },
+  "ranking_ties": "Label-independent SHA256 ordering of query and candidate IDs",
+  "split": {
+    "method": "Both resume IDs and job IDs disjoint",
+    "counts": {
+      "train": 3824,
+      "val": 489,
+      "test": 438
+    }
+  },
+  "limitations": [
+    "Synthetic rule-generated relevance only",
+    "No evidence of real hiring validity",
+    "Not calibrated",
+    "Small sampled ranking pools"
   ]
 }

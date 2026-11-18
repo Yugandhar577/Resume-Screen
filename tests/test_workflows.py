@@ -14,6 +14,7 @@ from ml.rewrite_workflow import proposals, apply_edits, validate_rewrite, reorde
 from ml.skills import extract_skills
 from ml.pdf_processing import extract_pdf, ocr_available
 from ml.hiring_simulator import HiringSimulator
+from ml.local_review import review_locally
 from ml.semantic_matching import SemanticMatcher
 from ml.model_registry import artifact_status
 from training.validate_reviewed_data import validate_manifest
@@ -137,13 +138,13 @@ class ProviderAndDataTests(unittest.TestCase):
             payload = self.review_payload()
             if fabricated:
                 payload['reviewers'][0]['strengths'][0]['evidence'] = ['Led 500 people']
-            mocked = MagicMock()
-            mocked.__enter__.return_value.chat.completions.create.return_value.choices[0].message.content = json.dumps(payload)
-            with patch('ml.hiring_simulator.Groq', return_value=mocked), patch.object(HiringSimulator, 'is_configured', return_value=True):
-                if fabricated:
-                    with self.assertRaises(ValueError): HiringSimulator().review('Python', 'SQL')
-                else:
-                    self.assertEqual(len(HiringSimulator().review('Python', 'SQL')['reviewers']), 3)
+            payload = {key: payload[key] for key in ('reviewers',)}
+            payload.update(alignment=[], job_flags=[], career_options=[], entities=[])
+            with patch('ml.local_review.local_model.generate', return_value=payload), patch('ml.local_review.local_model.status', return_value={}):
+                result = review_locally('Python', 'SQL')
+                self.assertEqual(len(result['reviewers']), 3)
+                self.assertEqual(result['rejected_unverified_items'], 1 if fabricated else 0)
+                self.assertEqual(len(result['reviewers'][0]['strengths']), 0 if fabricated else 1)
 
     def test_job_board_cache_attribution_and_safe_links(self):
         fixture = {'data': [{'slug': 'python-role', 'title': 'Python Engineer', 'company_name': 'Example', 'description': '<p>Python SQL</p><script>bad()</script>', 'url': 'https://www.arbeitnow.com/jobs/role', 'location': 'Berlin'}, {'slug': 'bad', 'url': 'https://evil.example/link'}]}

@@ -1,4 +1,50 @@
 services:
+  ollama:
+    # Includes the Gemma 4 think=false structured-output fix.
+    image: &ollama-image ollama/ollama:0.21.1@sha256:cd33c5656285ca365c9c5495fe0240a70aef642088c6427c461fd54b62f80ffb
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NO_CLOUD=1
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT:-8192}
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    init: true
+
+  ollama-init:
+    image: *ollama-image
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:e4b}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        if ollama show "$$OLLAMA_MODEL" >/dev/null 2>&1; then
+          echo "Local model $$OLLAMA_MODEL is already installed."
+        else
+          ollama pull "$$OLLAMA_MODEL"
+        fi
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+    init: true
+
   frontend:
     build:
       context: .
@@ -10,6 +56,7 @@ services:
     environment:
       - BACKEND_URL=http://backend:8001
     init: true
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s
@@ -29,14 +76,26 @@ services:
     ports:
       - "127.0.0.1:8001:8001"
     environment:
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
-      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-20b}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:e4b}
+      - OLLAMA_CONTEXT=${OLLAMA_CONTEXT:-8192}
+      - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT:-300}
+      - REVIEW_SIGNING_KEY=${REVIEW_SIGNING_KEY:-}
       - API_AUTH_TOKEN=${API_AUTH_TOKEN:-}
       - CORS_ORIGINS=http://localhost:3000
     init: true
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"]
       interval: 10s
       timeout: 5s
       retries: 6
       start_period: 20s
+
+volumes:
+  ollama_data:

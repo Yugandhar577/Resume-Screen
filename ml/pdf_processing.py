@@ -8,6 +8,32 @@ _ocr = None
 _ocr_lock = Lock()
 
 
+def extract_pdf_isolated(content, use_ocr=False, password=''):
+    """Kill the parser process after 45 seconds, including on Windows."""
+    import base64
+    import json
+    import os
+    from pathlib import Path
+    import subprocess
+    import sys
+    payload = json.dumps({'content': base64.b64encode(content).decode(), 'ocr': use_ocr, 'password': password}).encode()
+    try:
+        completed = subprocess.run([sys.executable, '-m', 'ml.document_worker'], input=payload,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   cwd=str(Path(__file__).resolve().parent.parent), timeout=45,
+                                   creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+        if completed.returncode != 0 or len(completed.stdout) > 400000:
+            raise HTTPException(status_code=400, detail='Document worker failed. Paste resume text or retry with a simpler PDF.')
+        response = json.loads(completed.stdout)
+        if 'error' in response:
+            raise HTTPException(status_code=response['status'], detail=response['error'])
+        return response['result']
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=408, detail='PDF processing exceeded 45 seconds. Paste the text or use a simpler PDF.')
+    except (ValueError, KeyError):
+        raise HTTPException(status_code=400, detail='Document worker returned an invalid result.')
+
+
 def ocr_available():
     return importlib.util.find_spec('rapidocr_onnxruntime') is not None and importlib.util.find_spec('pypdfium2') is not None
 
@@ -95,8 +121,12 @@ def extract_pdf(content, use_ocr=False, password=''):
             if len(pdf.pages) > 30:
                 raise HTTPException(status_code=413, detail='PDF resumes must contain at most 30 pages.')
             for page in pdf.pages:
+                if page.width*page.height > 2000000:
+                    raise HTTPException(status_code=413, detail='PDF page dimensions are too large.')
                 text, method = column_text(page)
                 pages.append(text); methods.append(method)
+                if sum(len(item) for item in pages) > 50000:
+                    raise HTTPException(status_code=413, detail='Extracted resume text exceeds 50,000 characters.')
     except HTTPException:
         raise
     except Exception:

@@ -1,4 +1,4 @@
-"""Check the running container stack through the frontend proxy; no external AI calls."""
+"""Check the container stack with fictional inputs; --with-ai invokes local Gemma."""
 import argparse
 import os
 from pathlib import Path
@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', default='http://127.0.0.1:3000')
+    parser.add_argument('--with-ai', action='store_true', help='Also require and exercise the local Ollama model')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     load_dotenv(root / '.env')
@@ -21,11 +22,18 @@ def main():
     health = session.get(url + '/health', timeout=15); health.raise_for_status()
     status = health.json()
     assert status['status'] == 'healthy'
+    if args.with_ai:
+        assert status['local_ai']['available'], status['local_ai']['reason']
     payload = {'resume': 'Alex Example\nSkills\nPython SQL\nExperience\n- Worked on Python services for 5 users',
-               'jobDescription': 'Software Engineer\nRequired: Python SQL', 'useAI': False}
-    response = session.post(url + '/api/analyze', json=payload, timeout=30); response.raise_for_status()
+               'jobDescription': 'Software Engineer\nRequired: Python SQL', 'useAI': args.with_ai}
+    response = session.post(url + '/api/analyze', json=payload, timeout=330 if args.with_ai else 30); response.raise_for_status()
     result = response.json()
     assert result['analysis']['atsScore'] == 100
+    if args.with_ai:
+        assert result['review_method'] == 'Local_Ollama', result.get('warnings')
+        assert result['detailed_results']['local_review']['available']
+        assert len(result['detailed_results']['local_review']['reviewers']) == 3
+        print('Local Gemma analysis through the frontend proxy: passed', flush=True)
     proposals = result['optimization']['proposals']
     assert proposals
     revised = session.post(url + '/api/optimize-preview', json={**payload, 'acceptedEdits': [proposals[0]['id']], 'template':'engineering'}, timeout=30)

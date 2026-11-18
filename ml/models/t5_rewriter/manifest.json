@@ -1,0 +1,101 @@
+{
+  "version": "t5-reviewed-v1",
+  "task": "resume_rewriting",
+  "training_completed": true,
+  "deployment_ready": false,
+  "deployment_reason": "Generated outputs still require semantic factual and human writing-quality evaluation.",
+  "checkpoint": "model.safetensors",
+  "checkpoint_sha256": "88fcdd7880d2f63ec1102269e2d46200cd53181ecb23371b6de36aed5f1aa9a7",
+  "source": {
+    "source_url": "urn:careerlens:project-authored-fictional-review-examples:v1",
+    "license": "Project-authored synthetic examples, provided for use and modification in this project.",
+    "synthetic": true,
+    "reviewed": false,
+    "limitations": [
+      "AI-authored fictional practice data; no real candidates, jobs, or hiring outcomes.",
+      "Human approval of these examples does not establish real-world model quality.",
+      "Similar templates may leak phrasing across source splits; these are pipeline exercises only."
+    ],
+    "review_type": "ai",
+    "ai_reviewed": true,
+    "review_limitations": "AI approvals authorized by project owner; no human-reviewed attestation. Small templated fictional data supports pipeline testing only.",
+    "task": "resume_rewriting",
+    "labels": [
+      "Vague",
+      "Biased",
+      "Experience_Inflated"
+    ],
+    "label_definitions": {
+      "Vague": "Contains unclear, non-measurable role expectations that need contextual clarification.",
+      "Biased": "Contains an explicit potentially exclusionary age, gender, or language restriction requiring contextual review.",
+      "Experience_Inflated": "Contains an experience expectation that conflicts with the stated entry level or stated technology timeline."
+    },
+    "reviewer": "Codex AI review",
+    "label_method": "Explicit AI review of fictional targets/labels",
+    "data_sha256": "3392c84ff0fe892a45c5c087372f18826b9c4afba85fc4d7bb9bd4b14a44d526",
+    "review_queue_sha256": "294813ea83fee5544f9ad04f80b13387885fa302a658b2ac1d2b9e421dce5efe",
+    "review_attestation": "Reviewer names are supplied attestations, not independently verified identities."
+  },
+  "base_model": "google-t5/t5-small",
+  "base_revision": "df1b051c49625cf57a3d0d8d3863ed4d13564fe4",
+  "seed": 42,
+  "epochs": 15,
+  "split": {
+    "method": "Source-resume-disjoint, excluding duplicate original text",
+    "rows": {
+      "val": 4,
+      "test": 4,
+      "train": 16
+    }
+  },
+  "evaluation": {
+    "val": {
+      "eval_loss": 0.016757259145379066,
+      "eval_runtime": 0.0569,
+      "eval_samples_per_second": 70.323,
+      "eval_steps_per_second": 35.162,
+      "epoch": 15.0
+    },
+    "test": {
+      "eval_loss": 0.017852630466222763,
+      "eval_runtime": 0.0647,
+      "eval_samples_per_second": 61.865,
+      "eval_steps_per_second": 30.932,
+      "epoch": 15.0,
+      "generation_examples": 4,
+      "numbers_preserved_rate": 1.0,
+      "recognized_skills_preserved_rate": 1.0,
+      "negation_preserved_rate": 1.0
+    }
+  },
+  "limitations": [
+    "Invariant checks are necessary, not semantic guarantees.",
+    "No measured human writing-quality result yet.",
+    "No automatic addition of missing skills or metrics.",
+    "The four-example test set was reused after inspecting the 3-epoch result; final metrics are not an independent untouched evaluation."
+  ],
+  "evaluation_protocol": {
+    "test_set_reused": true,
+    "earlier_run_epochs": 3,
+    "earlier_test": {
+      "numbers_preserved_rate": 0.75,
+      "recognized_skills_preserved_rate": 1.0,
+      "negation_preserved_rate": 1.0,
+      "generation_examples": 4
+    },
+    "note": "The same four test examples were inspected after the initial 3-epoch run and reused after increasing training to 15 epochs. Final results are not an untouched model-selection holdout."
+  },
+  "environment": {
+    "python": "3.13.6",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "device": "CPU",
+    "torch": "2.14.1+cpu",
+    "torch-geometric": "2.8.1",
+    "transformers": "5.19.0",
+    "sentence-transformers": "5.7.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "pyarrow": "24.0.0",
+    "scikit-learn": "1.9.1"
+  }
+}

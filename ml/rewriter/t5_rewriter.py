@@ -55,9 +55,12 @@ class T5ResumeRewriter:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False, **options)
             self.model = T5ForConditionalGeneration.from_pretrained(model_name, **options)
 
-    def train(self, training_pairs, save_path='ml/models/t5_rewriter', provenance=None):
-        if not provenance or provenance.get('reviewed') is not True:
+    def train(self, training_pairs, save_path='ml/models/t5_rewriter', provenance=None, allow_ai_reviewed_synthetic=False, epochs=3):
+        from training.validate_reviewed_data import review_permitted
+        if not provenance or not review_permitted(provenance, allow_ai_reviewed_synthetic):
             raise ValueError('Documented licensed, human-reviewed provenance is required before training.')
+        old_manifest = Path(save_path)/'manifest.json'
+        previous = json.loads(old_manifest.read_text(encoding='utf-8')) if old_manifest.is_file() else None
         required = {'source_id', 'original', 'improved', 'jd_context'}
         if not required.issubset(training_pairs.columns):
             raise ValueError('CSV requires source_id, original, improved, jd_context; source_id identifies the original resume, not each bullet.')
@@ -72,10 +75,10 @@ class T5ResumeRewriter:
         if any(originals[a] & originals[b] for a,b in [('train','val'),('train','test'),('val','test')]):
             raise ValueError('Duplicated original bullets cross source splits. Group these sources before training.')
         datasets = {name: ResumeRewriteDataset(rows, self.tokenizer) for name,rows in frames.items()}
-        arguments = TrainingArguments(output_dir=save_path, num_train_epochs=3, per_device_train_batch_size=2,
+        arguments = TrainingArguments(output_dir=save_path, num_train_epochs=epochs, per_device_train_batch_size=2,
                                       per_device_eval_batch_size=2, learning_rate=5e-5, weight_decay=0.01,
                                       save_strategy='epoch', eval_strategy='epoch', load_best_model_at_end=True,
-                                      metric_for_best_model='eval_loss', greater_is_better=False, seed=42, report_to=[])
+                                      metric_for_best_model='eval_loss', greater_is_better=False, seed=42, report_to=[], save_total_limit=2)
         trainer = Trainer(model=self.model, args=arguments, train_dataset=datasets['train'], eval_dataset=datasets['val'],
                           processing_class=self.tokenizer, data_collator=DataCollatorForSeq2Seq(self.tokenizer, model=self.model))
         trainer.train()
@@ -95,9 +98,14 @@ class T5ResumeRewriter:
         metadata = {'version': 't5-reviewed-v1', 'task': 'resume_rewriting', 'training_completed': True,
                     'deployment_ready': False, 'deployment_reason': 'Generated outputs still require semantic factual and human writing-quality evaluation.',
                     'checkpoint': checkpoint.name, 'checkpoint_sha256': hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
-                    'source': provenance, 'base_model': self.model_name, 'base_revision': BASE_REVISION, 'seed': 42,
+                    'source': provenance, 'base_model': self.model_name, 'base_revision': BASE_REVISION, 'seed': 42, 'epochs':epochs,
                     'split': {'method': 'Source-resume-disjoint, excluding duplicate original text', 'rows': {key:len(rows) for key,rows in frames.items()}},
                     'evaluation': evaluation, 'limitations': ['Invariant checks are necessary, not semantic guarantees.', 'No measured human writing-quality result yet.', 'No automatic addition of missing skills or metrics.']}
+        if previous and previous.get('source',{}).get('data_sha256') == provenance.get('data_sha256'):
+            metadata['evaluation_protocol'] = {'test_set_reused':True, 'previous_evaluation':previous.get('evaluation'),
+                'note':'The dataset was evaluated by a previous run. Repeated results must not be presented as an untouched model-selection holdout.'}
+        from training.environment import environment
+        metadata['environment'] = environment()
         (output/'manifest.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
         return metadata
 

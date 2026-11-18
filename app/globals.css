@@ -1,6 +1,68 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+@font-face {
+  font-family: 'Noto Devanagari';
+  src: url('/fonts/NotoSansDevanagari.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0900-097F, U+A8E0-A8FF;
+}
+
+.print-resume { display: none; }
+
+.entity-graph { min-width: 0; display: grid; gap: 16px; }
+.entity-graph-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 350px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+.entity-graph-key {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entity-graph-key-item { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.entity-graph-number {
+  flex: 0 0 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+.entity-graph-name { min-width: 0; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.entity-graph-type { display: block; margin-top: 2px; color: #737373; font-size: 11px; text-transform: capitalize; }
+
+@media (max-width: 479px) {
+  .entity-graph-key { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media print {
+  @page { size: A4; margin: 18mm; }
+  body > * { display: none !important; }
+  body > .print-resume {
+    display: block !important;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: 'Noto Devanagari', 'Nirmala UI', Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #000;
+  }
+}
+
 html {
   color-scheme: light;
   scroll-behavior: smooth;
@@ -13,6 +75,7 @@ body {
   color: #111111;
   min-height: 100vh;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 button, input, textarea, summary {
